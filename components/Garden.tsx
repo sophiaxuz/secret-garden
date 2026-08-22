@@ -1,8 +1,8 @@
 // This module renders in the browser because WebGL is not available on the server.
 "use client";
 
-// `Environment` supplies realistic image-based ambient lighting.
-import { Environment } from "@react-three/drei";
+// `Environment` supplies reflections while `Sky` creates a daylight atmosphere.
+import { Environment, Sky } from "@react-three/drei";
 // `Canvas` creates the Three.js renderer, scene, and camera for React.
 import { Canvas } from "@react-three/fiber";
 // React state connects fast 3D targeting to the slower HTML information interface.
@@ -17,6 +17,8 @@ import { FirstPersonControls } from "./garden/FirstPersonControls";
 import { GardenWorld } from "./garden/GardenWorld";
 // The UI and 3D objects share this description of a flower memory.
 import type { FlowerMemory } from "./garden/flower/flower-memory";
+// This browser-audio module provides birds and moving leaves after entry.
+import { NatureSoundscape } from "./garden/nature/NatureSoundscape";
 
 // These are the only facts a caller needs in order to render the garden.
 type GardenProps = {
@@ -57,10 +59,19 @@ export default function Garden({ plantedCount, entered }: GardenProps) {
         dpr={[1, 1.6]}
         shadows
       >
-        {/* Set the plain color visible behind all 3D geometry. */}
-        <color attach="background" args={["#829078"]} />
-        {/* Fade distant objects into the background to create depth. */}
-        <fog attach="fog" args={["#829078", 8, 23]} />
+        {/* Keep a blue fallback behind the procedural sky dome. */}
+        <color attach="background" args={["#8fc8e8"]} />
+        {/* Fade distant objects into a pale horizon to create atmospheric depth. */}
+        <fog attach="fog" args={["#b9d8dc", 15, 38]} />
+        {/* Model a bright blue sky with a low, warm morning sun. */}
+        <Sky
+          distance={450000}
+          sunPosition={[-4, 3, -8]}
+          inclination={0.52}
+          azimuth={0.22}
+          turbidity={7}
+          rayleigh={2.2}
+        />
         {/* Light upward and downward surfaces with different colors. */}
         <hemisphereLight
           intensity={1.15}
@@ -90,6 +101,9 @@ export default function Garden({ plantedCount, entered }: GardenProps) {
           onInspect={inspectFlower}
         />
       </Canvas>
+
+      {/* Start the natural audio after entry and expose its mute control. */}
+      <NatureSoundscape active={entered} />
 
       {/* Tell the visitor when the reticle is close enough to inspect a flower. */}
       {targetedFlower && !selectedFlower && (

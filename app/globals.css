@@ -208,6 +208,29 @@ button {
   opacity: 1;
   pointer-events: auto;
 }
+/* Keep the sound state visible without competing with the garden title. */
+.sound-control {
+  position: absolute;
+  z-index: 8;
+  right: 5vw;
+  top: calc(5vh + 48px);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 0;
+  border: 0;
+  border-bottom: 1px solid #f1ead64d;
+  color: #f1ead6;
+  background: transparent;
+  font-size: 8px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  text-shadow: 0 2px 12px #173326;
+}
+/* The circular symbol communicates the current playing or muted state. */
+.sound-control span {
+  font-size: 12px;
+}
 /* Rearrange and resize overlays for narrow phone screens. */
 @media (max-width: 700px) {
   .threshold-copy {
