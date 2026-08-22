@@ -1,6 +1,8 @@
 // Flower and Tree hide the geometry details behind small reusable interfaces.
 import { Flower } from "./flower/Flower";
 import { Tree } from "./Tree";
+// Nature groups the butterflies, robin, and squirrel in one scene module.
+import { Nature } from "./nature/Nature";
 
 // Each tuple stores coordinates, appearance, and inspectable memory data.
 const FLOWERS = [
@@ -172,6 +174,8 @@ export function GardenWorld({
       <Tree position={[7, 0, -5]} scale={1.45} />
       <Tree position={[-6, 0, -10]} scale={1.5} />
       <Tree position={[6, 0, 5]} />
+      {/* Add independently animated animal life among the static plants. */}
+      <Nature />
     </>
   );
 }
