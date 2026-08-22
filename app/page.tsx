@@ -20,7 +20,9 @@ export default function Home() {
   }, [entered]);
 
   function walk(code: "KeyW" | "KeyS", pressed: boolean) {
-    window.dispatchEvent(new KeyboardEvent(pressed ? "keydown" : "keyup", { code }));
+    window.dispatchEvent(
+      new KeyboardEvent(pressed ? "keydown" : "keyup", { code }),
+    );
   }
 
   function choosePhoto(event: ChangeEvent<HTMLInputElement>) {
@@ -36,31 +38,74 @@ export default function Home() {
 
   return (
     <main className={`world ${entered ? "entered" : ""}`}>
-      <input ref={inputRef} type="file" accept="image/*" capture="environment" onChange={choosePhoto} hidden />
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        onChange={choosePhoto}
+        hidden
+      />
       <Garden plantedCount={plantedCount} entered={entered} />
       <div className="vignette" />
       <div className="grain" />
 
-      <div className="garden-name">The Secret Garden <i>·</i> Spring, first light</div>
+      <div className="garden-name">
+        The Secret Garden <i>·</i> Spring, first light
+      </div>
       <section className="threshold-copy">
         <p>Somewhere between noticing and remembering</p>
-        <h1>There is a garden<br />only you can enter.</h1>
-        <button className="enter" onClick={() => setEntered(true)}>cross the threshold <span>→</span></button>
+        <h1>
+          There is a garden
+          <br />
+          only you can enter.
+        </h1>
+        <button className="enter" onClick={() => setEntered(true)}>
+          cross the threshold <span>→</span>
+        </button>
       </section>
 
       <div className="inside-copy">
-        <p>Move slowly.<br />The garden is listening.</p>
-        <span><span className="desktop-help">click to look · WASD to wander · P to plant · Esc releases</span><span className="touch-help">drag to look · hold the path button to walk</span></span>
+        <p>
+          Move slowly.
+          <br />
+          The garden is listening.
+        </p>
+        <span>
+          <span className="desktop-help">
+            click to look · WASD to wander · P to plant · Esc releases
+          </span>
+          <span className="touch-help">
+            drag to look · hold the path button to walk
+          </span>
+        </span>
       </div>
 
-      <div className="reticle" aria-hidden="true">·</div>
-      <button className="walk-control" aria-label="Walk forward" onPointerDown={() => walk("KeyW", true)} onPointerUp={() => walk("KeyW", false)} onPointerCancel={() => walk("KeyW", false)}>↑<small>walk</small></button>
+      <div className="reticle" aria-hidden="true">
+        ·
+      </div>
+      <button
+        className="walk-control"
+        aria-label="Walk forward"
+        onPointerDown={() => walk("KeyW", true)}
+        onPointerUp={() => walk("KeyW", false)}
+        onPointerCancel={() => walk("KeyW", false)}
+      >
+        ↑<small>walk</small>
+      </button>
 
       <button className="plant-orb" onClick={() => inputRef.current?.click()}>
-        <b>＋</b><small>plant<br />a memory</small>
+        <b>＋</b>
+        <small>
+          plant
+          <br />a memory
+        </small>
       </button>
       {status && <div className="garden-toast">{status}</div>}
-      <div className="memory-tally">{String(3 + plantedCount).padStart(2, "0")} <small>living memories</small></div>
+      <div className="memory-tally">
+        {String(3 + plantedCount).padStart(2, "0")}{" "}
+        <small>living memories</small>
+      </div>
     </main>
   );
 }

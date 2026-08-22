@@ -6,7 +6,9 @@ export const metadata: Metadata = {
   description: "Every encounter leaves a seed.",
 };
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default function RootLayout({
+  children,
+}: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
       <body>{children}</body>
