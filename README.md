@@ -23,6 +23,8 @@ For v1, let's scope it to plants!
 Using plant-identification API
 pl@ntnet api - free up to 500 requests
 
+it's a bit like picturethis but i really want them to be more visual, rather than looking like a database or a list.
+
 ### User experience
 
 **External sensory input:**
@@ -32,4 +34,48 @@ Touch: vibration patterns and haptic responses
 Movement: camera movement, tilting, walking and reaching
 Proprioception: interactions requiring the body to orient or move
 
+
+flowchart TD
+    A["Flower photograph"] --> B["Pl@ntNet identification"]
+    B --> C["Species and confidence"]
+    A --> D["Extract dominant colours"]
+    C --> E["Choose plant archetype"]
+    D --> F["Create appearance"]
+    E --> F
+    F --> G["Render unique 3D flower"]
+
 **Goal-based mechanism**
+TODO
+
+**Flower**
+User take a photo, it will call pl@ntnet api -> plant a flower (hmmm, how can i get a 3d model version of that flower????)
+
+Create a small library of plant archetypes (3D models):
+
+Daisy-like
+Rose-like
+Bell-shaped
+Spike-shaped
+Cup-shaped
+Leafy plant
+
+
+### Tech stack
+
+Frontend:
+- next.js  
+- Three.js  
+- Typescript
+- React Three fiber (React renderer for three.js)
+- React three drei (helper for react three fiber)
+
+Backend:
+- Next.js Route Handlers
+- Pl@ntNet identification API
+- Supabase Postgres
+- Supabase Storage
+- Supabase Auth, only when accounts become necessary
+
+3D assets:
+- GLB/glTF plant archetypes
+- Procedural variation through React Three Fiber
