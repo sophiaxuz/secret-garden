@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { ChangeEvent, useRef, useState } from "react";
+import { ChangeEvent, useEffect, useRef, useState } from "react";
 
 const Garden = dynamic(() => import("@/components/Garden"), { ssr: false });
 
@@ -10,6 +10,18 @@ export default function Home() {
   const [entered, setEntered] = useState(false);
   const [plantedCount, setPlantedCount] = useState(0);
   const [status, setStatus] = useState("");
+
+  useEffect(() => {
+    const plantWithKeyboard = (event: KeyboardEvent) => {
+      if (entered && event.code === "KeyP") inputRef.current?.click();
+    };
+    window.addEventListener("keydown", plantWithKeyboard);
+    return () => window.removeEventListener("keydown", plantWithKeyboard);
+  }, [entered]);
+
+  function walk(code: "KeyW" | "KeyS", pressed: boolean) {
+    window.dispatchEvent(new KeyboardEvent(pressed ? "keydown" : "keyup", { code }));
+  }
 
   function choosePhoto(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -25,7 +37,7 @@ export default function Home() {
   return (
     <main className={`world ${entered ? "entered" : ""}`}>
       <input ref={inputRef} type="file" accept="image/*" capture="environment" onChange={choosePhoto} hidden />
-      <Garden plantedCount={plantedCount} />
+      <Garden plantedCount={plantedCount} entered={entered} />
       <div className="vignette" />
       <div className="grain" />
 
@@ -38,8 +50,11 @@ export default function Home() {
 
       <div className="inside-copy">
         <p>Move slowly.<br />The garden is listening.</p>
-        <span>drag to wander · scroll to breathe</span>
+        <span><span className="desktop-help">click to look · WASD to wander · P to plant · Esc releases</span><span className="touch-help">drag to look · hold the path button to walk</span></span>
       </div>
+
+      <div className="reticle" aria-hidden="true">·</div>
+      <button className="walk-control" aria-label="Walk forward" onPointerDown={() => walk("KeyW", true)} onPointerUp={() => walk("KeyW", false)} onPointerCancel={() => walk("KeyW", false)}>↑<small>walk</small></button>
 
       <button className="plant-orb" onClick={() => inputRef.current?.click()}>
         <b>＋</b><small>plant<br />a memory</small>
