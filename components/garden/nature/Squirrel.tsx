@@ -17,7 +17,6 @@ const RETURN_HEADING = Math.atan2(
   SQUIRREL_START.x - SQUIRREL_END.x,
   SQUIRREL_START.z - SQUIRREL_END.z,
 );
-
 // Build a small squirrel pausing near the edge of the path.
 export function Squirrel({ animated = true }: { animated?: boolean }) {
   // This ref moves the whole animal in small alert motions.
@@ -137,6 +136,7 @@ export function Squirrel({ animated = true }: { animated?: boolean }) {
     const pawSwing = Math.sin(clock.elapsedTime * 15) * 0.55 * runEnergy;
     leftPaw.current.rotation.x = 0.35 + pawSwing;
     rightPaw.current.rotation.x = 0.35 - pawSwing;
+  });
   });
 
   // Render a recognizable squirrel silhouette with simple geometry.
