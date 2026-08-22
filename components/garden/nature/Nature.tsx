@@ -2,6 +2,9 @@
 import { useEffect, useState } from "react";
 // Group the garden's moving animal life behind one small scene interface.
 import { Butterfly } from "./Butterfly";
+import { Cat } from "./Cat";
+import { Dog } from "./Dog";
+import { Rabbit } from "./Rabbit";
 import { Robin } from "./Robin";
 import { Squirrel } from "./Squirrel";
 
@@ -48,6 +51,12 @@ export function Nature() {
       <Robin animated={animated} />
       {/* The squirrel stays lower and farther into the garden. */}
       <Squirrel animated={animated} />
+      {/* The rabbit forages among the flowers on the sunny side. */}
+      <Rabbit animated={animated} />
+      {/* The dog follows a friendly patrol near the front of the garden. */}
+      <Dog animated={animated} />
+      {/* The cat quietly watches the deeper, shaded side of the garden. */}
+      <Cat animated={animated} />
     </>
   );
 }

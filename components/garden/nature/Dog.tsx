@@ -1,0 +1,244 @@
+// The render-loop hook powers the dog's wandering behavior.
+import { useFrame } from "@react-three/fiber";
+// Refs keep mutable Three.js parts available between renders.
+import { useRef } from "react";
+// Three provides scene types, route vectors, and damping helpers.
+import * as THREE from "three";
+
+// The dog follows this short route beside the path rather than roaming randomly.
+const DOG_START = new THREE.Vector3(-4.4, 0.46, 3.45);
+const DOG_END = new THREE.Vector3(-2.7, 0.46, 5.75);
+// Precompute the direction for each half of the walk.
+const OUTBOUND_HEADING = Math.atan2(
+  DOG_END.x - DOG_START.x,
+  DOG_END.z - DOG_START.z,
+);
+const RETURN_HEADING = Math.atan2(
+  DOG_START.x - DOG_END.x,
+  DOG_START.z - DOG_END.z,
+);
+
+// Build a friendly garden dog that sniffs, trots, watches, and wags.
+export function Dog({ animated = true }: { animated?: boolean }) {
+  // The root group controls the dog's world position and direction.
+  const dog = useRef<THREE.Group>(null);
+  // The head looks and sniffs independently from the body.
+  const head = useRef<THREE.Group>(null);
+  // The tail pivots rapidly when the dog is excited.
+  const tail = useRef<THREE.Group>(null);
+  // Four leg refs create an alternating walking gait.
+  const frontLeftLeg = useRef<THREE.Mesh>(null);
+  const frontRightLeg = useRef<THREE.Mesh>(null);
+  const backLeftLeg = useRef<THREE.Mesh>(null);
+  const backRightLeg = useRef<THREE.Mesh>(null);
+
+  // Repeat a relaxed twenty-four-second garden patrol.
+  useFrame(({ clock }, delta) => {
+    // Wait until every animated piece exists in the Three.js scene.
+    if (
+      !dog.current ||
+      !head.current ||
+      !tail.current ||
+      !frontLeftLeg.current ||
+      !frontRightLeg.current ||
+      !backLeftLeg.current ||
+      !backRightLeg.current
+    )
+      return;
+    // Reset to a friendly standing pose for reduced-motion visitors.
+    if (!animated) {
+      dog.current.position.copy(DOG_START);
+      dog.current.rotation.set(0, OUTBOUND_HEADING, 0);
+      head.current.rotation.set(0, 0, 0);
+      tail.current.rotation.z = 0.22;
+      frontLeftLeg.current.rotation.x = 0;
+      frontRightLeg.current.rotation.x = 0;
+      backLeftLeg.current.rotation.x = 0;
+      backRightLeg.current.rotation.x = 0;
+      return;
+    }
+
+    // Convert elapsed time into one repeating behavior cycle.
+    const cycle = clock.elapsedTime % 24;
+    // Each phase updates these targets before the shared smoothing code runs.
+    let desiredHeading = dog.current.rotation.y;
+    let desiredHeadPitch = 0;
+    let desiredHeadTurn = 0;
+    let gaitEnergy = 0;
+
+    if (cycle < 5) {
+      // Sniff a patch near the route's beginning.
+      dog.current.position.copy(DOG_START);
+      dog.current.position.y += Math.sin(cycle * 2.2) * 0.012;
+      desiredHeading = OUTBOUND_HEADING;
+      desiredHeadPitch = 0.26 + Math.sin(cycle * 2.6) * 0.08;
+      desiredHeadTurn = Math.sin(cycle * 0.9) * 0.18;
+    } else if (cycle < 11) {
+      // Trot toward the far patch with a gentle rise on each step.
+      const progress = (cycle - 5) / 6;
+      const eased = THREE.MathUtils.smoothstep(progress, 0, 1);
+      dog.current.position.lerpVectors(DOG_START, DOG_END, eased);
+      dog.current.position.y +=
+        Math.abs(Math.sin(progress * Math.PI * 8)) * 0.07;
+      desiredHeading = OUTBOUND_HEADING;
+      gaitEnergy = Math.sin(progress * Math.PI);
+    } else if (cycle < 16) {
+      // Pause at the end and watch different parts of the garden.
+      dog.current.position.copy(DOG_END);
+      dog.current.position.y += Math.sin(cycle * 1.7) * 0.01;
+      desiredHeading = RETURN_HEADING;
+      desiredHeadTurn = Math.sin(cycle * 0.8) * 0.35;
+      desiredHeadPitch = -0.05;
+    } else if (cycle < 22) {
+      // Trot home along the reverse route.
+      const progress = (cycle - 16) / 6;
+      const eased = THREE.MathUtils.smoothstep(progress, 0, 1);
+      dog.current.position.lerpVectors(DOG_END, DOG_START, eased);
+      dog.current.position.y +=
+        Math.abs(Math.sin(progress * Math.PI * 8)) * 0.07;
+      desiredHeading = RETURN_HEADING;
+      gaitEnergy = Math.sin(progress * Math.PI);
+    } else {
+      // Rest at the starting patch before beginning another patrol.
+      dog.current.position.copy(DOG_START);
+      desiredHeading = OUTBOUND_HEADING;
+      desiredHeadPitch = 0.08;
+      desiredHeadTurn = Math.sin(cycle * 1.1) * 0.16;
+    }
+
+    // Calculate the shortest body turn to avoid spinning at route changes.
+    const headingDifference = Math.atan2(
+      Math.sin(desiredHeading - dog.current.rotation.y),
+      Math.cos(desiredHeading - dog.current.rotation.y),
+    );
+    // Blend the body direction so the dog turns during pauses naturally.
+    dog.current.rotation.y += headingDifference * Math.min(1, delta * 3.5);
+    // Smoothly raise and lower the muzzle for sniffing behavior.
+    head.current.rotation.x = THREE.MathUtils.damp(
+      head.current.rotation.x,
+      desiredHeadPitch,
+      7,
+      delta,
+    );
+    // Smoothly look from side to side while the dog is standing.
+    head.current.rotation.y = THREE.MathUtils.damp(
+      head.current.rotation.y,
+      desiredHeadTurn,
+      6,
+      delta,
+    );
+    // Wag continuously, adding faster movement during the walking phases.
+    tail.current.rotation.z =
+      0.22 +
+      Math.sin(clock.elapsedTime * 4.5) * 0.28 +
+      Math.sin(clock.elapsedTime * 9) * 0.12 * gaitEnergy;
+    // Move diagonal pairs together to imitate a natural trot.
+    const step = Math.sin(clock.elapsedTime * 9) * 0.42 * gaitEnergy;
+    frontLeftLeg.current.rotation.x = step;
+    backRightLeg.current.rotation.x = step;
+    frontRightLeg.current.rotation.x = -step;
+    backLeftLeg.current.rotation.x = -step;
+  });
+
+  // Render a warm golden dog from rounded, lightweight primitives.
+  return (
+    <group
+      ref={dog}
+      position={DOG_START.toArray()}
+      rotation={[0, OUTBOUND_HEADING, 0]}
+      scale={0.58}
+    >
+      {/* A long oval forms the dog's torso. */}
+      <mesh scale={[0.68, 0.56, 1.08]}>
+        <sphereGeometry args={[0.72, 17, 11]} />
+        <meshStandardMaterial color="#b77d43" roughness={1} />
+      </mesh>
+      {/* A cream chest patch softens the front of the body. */}
+      <mesh position={[0, 0.02, 0.68]} scale={[0.46, 0.46, 0.22]}>
+        <sphereGeometry args={[0.7, 13, 9]} />
+        <meshStandardMaterial color="#e2c89d" roughness={1} />
+      </mesh>
+      {/* Group the head and face so they can sniff and look around together. */}
+      <group ref={head} position={[0, 0.34, 0.88]}>
+        {/* A broad head creates a gentle, friendly expression. */}
+        <mesh scale={[0.82, 0.76, 0.78]}>
+          <sphereGeometry args={[0.55, 16, 11]} />
+          <meshStandardMaterial color="#bd8248" roughness={1} />
+        </mesh>
+        {/* Two hanging ears frame the face. */}
+        <mesh
+          position={[-0.48, 0.04, -0.03]}
+          rotation={[0.1, 0, 0.24]}
+          scale={[0.28, 0.55, 0.2]}
+        >
+          <sphereGeometry args={[0.65, 12, 8]} />
+          <meshStandardMaterial color="#895b35" roughness={1} />
+        </mesh>
+        <mesh
+          position={[0.48, 0.04, -0.03]}
+          rotation={[0.1, 0, -0.24]}
+          scale={[0.28, 0.55, 0.2]}
+        >
+          <sphereGeometry args={[0.65, 12, 8]} />
+          <meshStandardMaterial color="#895b35" roughness={1} />
+        </mesh>
+        {/* Dark eyes and tiny highlights make the dog attentive. */}
+        <mesh position={[-0.23, 0.12, 0.4]}>
+          <sphereGeometry args={[0.075, 10, 7]} />
+          <meshStandardMaterial color="#211b16" roughness={0.3} />
+        </mesh>
+        <mesh position={[0.23, 0.12, 0.4]}>
+          <sphereGeometry args={[0.075, 10, 7]} />
+          <meshStandardMaterial color="#211b16" roughness={0.3} />
+        </mesh>
+        <mesh position={[-0.25, 0.145, 0.46]}>
+          <sphereGeometry args={[0.018, 7, 5]} />
+          <meshBasicMaterial color="#fff8e9" />
+        </mesh>
+        <mesh position={[0.21, 0.145, 0.46]}>
+          <sphereGeometry args={[0.018, 7, 5]} />
+          <meshBasicMaterial color="#fff8e9" />
+        </mesh>
+        {/* A cream muzzle projects beyond the head. */}
+        <mesh position={[0, -0.09, 0.48]} scale={[0.55, 0.36, 0.34]}>
+          <sphereGeometry args={[0.62, 13, 9]} />
+          <meshStandardMaterial color="#e2c89d" roughness={1} />
+        </mesh>
+        {/* The black nose sits at the end of the muzzle. */}
+        <mesh position={[0, -0.02, 0.69]} scale={[1.2, 0.82, 0.8]}>
+          <sphereGeometry args={[0.105, 10, 7]} />
+          <meshStandardMaterial color="#29231e" roughness={0.5} />
+        </mesh>
+        {/* A green collar connects the dog visually to the garden palette. */}
+        <mesh position={[0, -0.37, -0.03]} rotation={[Math.PI / 2, 0, 0]}>
+          <torusGeometry args={[0.36, 0.055, 8, 18]} />
+          <meshStandardMaterial color="#56734b" roughness={0.85} />
+        </mesh>
+      </group>
+      {/* Four narrow legs support and animate the dog's walking gait. */}
+      <mesh ref={frontLeftLeg} position={[-0.34, -0.48, 0.55]}>
+        <cylinderGeometry args={[0.11, 0.13, 0.72, 8]} />
+        <meshStandardMaterial color="#a96f3d" roughness={1} />
+      </mesh>
+      <mesh ref={frontRightLeg} position={[0.34, -0.48, 0.55]}>
+        <cylinderGeometry args={[0.11, 0.13, 0.72, 8]} />
+        <meshStandardMaterial color="#a96f3d" roughness={1} />
+      </mesh>
+      <mesh ref={backLeftLeg} position={[-0.34, -0.48, -0.55]}>
+        <cylinderGeometry args={[0.12, 0.14, 0.72, 8]} />
+        <meshStandardMaterial color="#a96f3d" roughness={1} />
+      </mesh>
+      <mesh ref={backRightLeg} position={[0.34, -0.48, -0.55]}>
+        <cylinderGeometry args={[0.12, 0.14, 0.72, 8]} />
+        <meshStandardMaterial color="#a96f3d" roughness={1} />
+      </mesh>
+      {/* The raised tail pivots from the back of the body. */}
+      <group ref={tail} position={[0, 0.16, -0.9]} rotation={[-0.65, 0, 0.22]}>
+        <mesh position={[0, 0.43, 0]}>
+          <cylinderGeometry args={[0.1, 0.16, 0.86, 9]} />
+          <meshStandardMaterial color="#a96f3d" roughness={1} />
+        </mesh>
+      </group>
+    </group>
+  );
+}
