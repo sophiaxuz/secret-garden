@@ -216,6 +216,3 @@ export function Robin({ animated = true }: { animated?: boolean }) {
     </>
   );
 }
-
-  );
-}

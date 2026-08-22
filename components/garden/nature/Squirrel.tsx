@@ -137,7 +137,6 @@ export function Squirrel({ animated = true }: { animated?: boolean }) {
     leftPaw.current.rotation.x = 0.35 + pawSwing;
     rightPaw.current.rotation.x = 0.35 - pawSwing;
   });
-  });
 
   // Render a recognizable squirrel silhouette with simple geometry.
   return (
