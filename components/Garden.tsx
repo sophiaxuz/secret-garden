@@ -43,11 +43,11 @@ const demoPositions: [number, number, number][] = [[.72, .08, .8], [-.55, .08, .
 
 export default function Garden({ plantedCount }: { plantedCount: number }) {
   return (
-    <Canvas camera={{ position: [3.8, 2.4, 5.4], fov: 34 }} dpr={[1, 1.8]}>
-      <color attach="background" args={["#dce6d4"]} />
-      <fog attach="fog" args={["#dce6d4", 6, 10]} />
-      <ambientLight intensity={1.35} />
-      <directionalLight position={[-3, 6, 4]} intensity={2.5} color="#fff6d9" castShadow />
+    <Canvas camera={{ position: [3.8, 2.05, 5.4], fov: 38 }} dpr={[1, 1.8]}>
+      <color attach="background" args={["#668069"]} />
+      <fog attach="fog" args={["#718570", 5, 10]} />
+      <ambientLight intensity={1.1} />
+      <directionalLight position={[-3, 6, 4]} intensity={2.5} color="#ffe7b0" castShadow />
       <Float speed={1.2} rotationIntensity={.025} floatIntensity={.08}>
         <Ground />
         <Flower position={[-1.25, .08, .18]} color="#f4eee0" scale={.9} petals={9} />
@@ -59,7 +59,7 @@ export default function Garden({ plantedCount }: { plantedCount: number }) {
       </Float>
       <ContactShadows position={[0, -.12, 0]} opacity={.32} scale={7} blur={2.5} far={4} />
       <Environment preset="forest" />
-      <OrbitControls enablePan={false} minDistance={4.5} maxDistance={7} minPolarAngle={.85} maxPolarAngle={1.4} autoRotate autoRotateSpeed={.18} />
+      <OrbitControls enablePan={false} minDistance={3.8} maxDistance={7} minPolarAngle={.75} maxPolarAngle={1.45} autoRotate autoRotateSpeed={.18} />
     </Canvas>
   );
 }

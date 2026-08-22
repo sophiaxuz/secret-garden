@@ -7,60 +7,45 @@ const Garden = dynamic(() => import("@/components/Garden"), { ssr: false });
 
 export default function Home() {
   const inputRef = useRef<HTMLInputElement>(null);
+  const [entered, setEntered] = useState(false);
   const [plantedCount, setPlantedCount] = useState(0);
-  const [uploadStatus, setUploadStatus] = useState<"idle" | "reading" | "planted">("idle");
-  const [fileName, setFileName] = useState("");
+  const [status, setStatus] = useState("");
 
   function choosePhoto(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (!file) return;
-    setFileName(file.name);
-    setUploadStatus("reading");
+    setStatus(`Holding ${file.name} up to the light…`);
     event.currentTarget.value = "";
     window.setTimeout(() => {
       setPlantedCount((count) => count + 1);
-      setUploadStatus("planted");
-    }, 700);
+      setStatus("A new demo bloom is stirring.");
+    }, 850);
   }
 
   return (
-    <main>
+    <main className={`world ${entered ? "entered" : ""}`}>
+      <input ref={inputRef} type="file" accept="image/*" capture="environment" onChange={choosePhoto} hidden />
+      <Garden plantedCount={plantedCount} />
+      <div className="vignette" />
       <div className="grain" />
-      <header>
-        <a className="brand" href="#top" aria-label="The Secret Garden home">
-          <span className="brand-mark">S</span>
-          <span>The Secret Garden</span>
-        </a>
-        <div className="season" title="Seasonal lifecycle preview"><span /> Spring preview</div>
-        <button className="sound" disabled title="Soundscape coming soon">◌ Soundscape · soon</button>
-      </header>
 
-      <section className="hero" id="top">
-        <div className="copy">
-          <p className="eyebrow">A PLACE FOR WHAT MOVES YOU</p>
-          <h1>Every encounter<br />leaves a <em>seed.</em></h1>
-          <p className="intro">Photograph a plant that catches your eye.<br />Watch it take root in a garden that is entirely yours.</p>
-          <div className="actions">
-            <input ref={inputRef} type="file" accept="image/*" capture="environment" onChange={choosePhoto} hidden />
-            <button className="primary" onClick={() => inputRef.current?.click()}>
-              <span className="camera">▣</span> Plant a memory <span>↗</span>
-            </button>
-            <button className="text-button" onClick={() => document.querySelector("canvas")?.scrollIntoView({ behavior: "smooth" })}>Explore your garden <span>↓</span></button>
-          </div>
-          {uploadStatus !== "idle" && <p className="status">{uploadStatus === "planted" ? "A demo bloom has taken root — identification comes next." : `Preparing a demo bloom from ${fileName}…`}</p>}
-        </div>
-
-        <div className="garden-wrap" aria-label="Interactive three-dimensional flower garden">
-          <Garden plantedCount={plantedCount} />
-          <div className="hint"><span>↔</span> Drag to wander</div>
-          <div className="plant-count"><strong>{String(3 + plantedCount).padStart(2, "0")}</strong><span>memories<br />in bloom</span></div>
-        </div>
+      <div className="garden-name">The Secret Garden <i>·</i> Spring, first light</div>
+      <section className="threshold-copy">
+        <p>Somewhere between noticing and remembering</p>
+        <h1>There is a garden<br />only you can enter.</h1>
+        <button className="enter" onClick={() => setEntered(true)}>cross the threshold <span>→</span></button>
       </section>
 
-      <footer>
-        <p>“What we attend to becomes part of our inner garden.”</p>
-        <div className="weather" title="Atmosphere preview"><span>☼</span><span>Spring<small>Soft morning light</small></span></div>
-      </footer>
+      <div className="inside-copy">
+        <p>Move slowly.<br />The garden is listening.</p>
+        <span>drag to wander · scroll to breathe</span>
+      </div>
+
+      <button className="plant-orb" onClick={() => inputRef.current?.click()}>
+        <b>＋</b><small>plant<br />a memory</small>
+      </button>
+      {status && <div className="garden-toast">{status}</div>}
+      <div className="memory-tally">{String(3 + plantedCount).padStart(2, "0")} <small>living memories</small></div>
     </main>
   );
 }
