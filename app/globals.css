@@ -1,11 +1,14 @@
+/* Store reusable colors and font stacks as variables for the whole document. */
 :root {
   --cream: #f1ead6;
   --serif: "Iowan Old Style", "Baskerville", "Times New Roman", serif;
   --sans: "Avenir Next", "Segoe UI", sans-serif;
 }
+/* Include borders and padding inside every element's declared dimensions. */
 * {
   box-sizing: border-box;
 }
+/* Remove browser defaults and turn the page into a fixed, dark garden viewport. */
 html,
 body {
   margin: 0;
@@ -14,40 +17,47 @@ body {
   font-family: var(--sans);
   overflow: hidden;
 }
+/* Make every button inherit the surrounding typography and signal interactivity. */
 button {
   font: inherit;
   color: inherit;
   cursor: pointer;
 }
+/* Fill the visible screen and provide the positioning context for overlays. */
 .world {
   position: relative;
   width: 100vw;
   height: 100svh;
   overflow: hidden;
 }
+/* Pin React Three Fiber's canvas to every edge and reserve touch for the garden. */
 .world > canvas {
   position: absolute !important;
   inset: 0;
   touch-action: none;
 }
+/* Cover the scene with decorative layers that never intercept user input. */
 .grain,
 .vignette {
   position: absolute;
   inset: 0;
   pointer-events: none;
 }
+/* Darken the left and lower edges so the opening words remain readable. */
 .vignette {
   z-index: 2;
   background:
     linear-gradient(90deg, #102a20f5 0%, #163326b0 32%, transparent 60%),
     linear-gradient(0deg, #0e211895, transparent 40%);
 }
+/* Blend a tiny inline SVG noise texture over the scene for an organic finish. */
 .grain {
   z-index: 3;
   opacity: 0.14;
   mix-blend-mode: soft-light;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.6'/%3E%3C/svg%3E");
 }
+/* Position the garden's title safely above the WebGL canvas. */
 .garden-name {
   position: absolute;
   z-index: 5;
@@ -55,10 +65,12 @@ button {
   left: 5vw;
   font: 15px var(--serif);
 }
+/* Give the separator a warmer color and breathing room. */
 .garden-name i {
   color: #c6b276;
   margin: 0 12px;
 }
+/* Vertically center the opening copy and prepare it for an exit transition. */
 .threshold-copy {
   position: absolute;
   z-index: 5;
@@ -67,17 +79,20 @@ button {
   transform: translateY(-52%);
   transition: 1.2s cubic-bezier(0.7, 0, 0.2, 1);
 }
+/* Style the small introductory sentence as a quiet serif aside. */
 .threshold-copy p {
   font: italic 15px var(--serif);
   color: #ccceb8;
   margin-bottom: 26px;
 }
+/* Scale the main heading fluidly while keeping its lines tightly composed. */
 .threshold-copy h1 {
   font: 400 clamp(55px, 7vw, 112px)/0.86 var(--serif);
   letter-spacing: -0.055em;
   margin: 0;
   text-shadow: 0 4px 30px #10221888;
 }
+/* Make the entry action feel like understated text instead of a generic button. */
 .enter {
   margin-top: 42px;
   border: 0;
@@ -88,9 +103,11 @@ button {
   font-size: 10px;
   letter-spacing: 0.22em;
 }
+/* Separate the arrow from the entry label. */
 .enter span {
   margin-left: 34px;
 }
+/* Hide the post-entry guidance below its final position at first. */
 .inside-copy {
   position: absolute;
   z-index: 5;
@@ -100,14 +117,17 @@ button {
   transform: translateY(15px);
   transition: 1s 0.6s;
 }
+/* Give the garden's guidance a literary voice. */
 .inside-copy p {
   font: italic 22px/1.3 var(--serif);
 }
+/* Make control instructions compact, spaced, and uppercase. */
 .inside-copy span {
   font-size: 8px;
   letter-spacing: 0.2em;
   text-transform: uppercase;
 }
+/* Keep the live memory count in the upper-right corner. */
 .memory-tally {
   position: absolute;
   z-index: 5;
@@ -115,11 +135,13 @@ button {
   top: 5vh;
   font: 30px var(--serif);
 }
+/* Visually subordinate the explanatory words beside the number. */
 .memory-tally small {
   font: 8px var(--sans);
   letter-spacing: 0.18em;
   text-transform: uppercase;
 }
+/* Create the circular planting control, initially hidden before entry. */
 .plant-orb {
   position: absolute;
   z-index: 7;
@@ -139,13 +161,16 @@ button {
   opacity: 0;
   pointer-events: none;
 }
+/* Give pointer users a small physical response when they hover. */
 .plant-orb:hover {
   transform: scale(1.06) rotate(3deg);
   background: #224d3b;
 }
+/* Size the plus symbol with the display typeface. */
 .plant-orb b {
   font: 27px var(--serif);
 }
+/* Arrange the planting label as small uppercase text. */
 .plant-orb small {
   font-size: 9px;
   line-height: 1.2;
@@ -153,6 +178,7 @@ button {
   text-transform: uppercase;
   letter-spacing: 0.12em;
 }
+/* Center temporary feedback above the lower controls. */
 .garden-toast {
   position: absolute;
   z-index: 8;
@@ -166,19 +192,23 @@ button {
   border-radius: 40px;
   box-shadow: 0 8px 30px #213b2e44;
 }
+/* Once entered, fade and slide the opening doorway out of interaction. */
 .entered .threshold-copy {
   opacity: 0;
   transform: translate(-30px, -52%);
   pointer-events: none;
 }
+/* Once entered, reveal the movement guidance in its final position. */
 .entered .inside-copy {
   opacity: 1;
   transform: none;
 }
+/* Once entered, reveal and enable the planting control. */
 .entered .plant-orb {
   opacity: 1;
   pointer-events: auto;
 }
+/* Rearrange and resize overlays for narrow phone screens. */
 @media (max-width: 700px) {
   .threshold-copy {
     left: 7vw;
@@ -208,12 +238,14 @@ button {
     bottom: 21vh;
   }
 }
+/* Respect visitors who ask their operating system to minimize motion. */
 @media (prefers-reduced-motion: reduce) {
   * {
     animation: none !important;
     transition: none !important;
   }
 }
+/* Place a subtle aiming dot in the middle of the desktop view. */
 .reticle {
   position: absolute;
   z-index: 4;
@@ -225,13 +257,16 @@ button {
   color: #fff7dc;
   text-shadow: 0 0 8px #173326;
 }
+/* Show the aiming dot only after entry. */
 .entered .reticle {
   opacity: 0.5;
 }
+/* Touch-only controls and instructions are hidden by default. */
 .walk-control,
 .touch-help {
   display: none;
 }
+/* Swap desktop controls for touch controls on coarse-pointer devices. */
 @media (pointer: coarse) {
   .desktop-help {
     display: none;

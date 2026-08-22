@@ -1,0 +1,31 @@
+// These values let the world place and resize each tree.
+type TreeProps = {
+  // The tuple represents x, y, and z coordinates in the scene.
+  position: [number, number, number];
+  // Scale is optional because most trees can use their natural size.
+  scale?: number;
+};
+
+// Build a stylized low-poly tree from a trunk and two leaf clusters.
+export function Tree({ position, scale = 1 }: TreeProps) {
+  // The group makes the position and scale apply to every tree part.
+  return (
+    <group position={position} scale={scale}>
+      {/* A tapered cylinder becomes the trunk. */}
+      <mesh position={[0, 2.1, 0]}>
+        <cylinderGeometry args={[0.22, 0.38, 4.2, 9]} />
+        <meshStandardMaterial color="#3a3b28" roughness={1} />
+      </mesh>
+      {/* A large faceted shape forms the main canopy. */}
+      <mesh position={[0, 4.2, 0]}>
+        <dodecahedronGeometry args={[1.65, 1]} />
+        <meshStandardMaterial color="#294c35" roughness={1} />
+      </mesh>
+      {/* A smaller offset canopy prevents a perfectly symmetrical silhouette. */}
+      <mesh position={[-0.9, 4, 0.2]}>
+        <dodecahedronGeometry args={[1.05, 1]} />
+        <meshStandardMaterial color="#365c3c" roughness={1} />
+      </mesh>
+    </group>
+  );
+}
