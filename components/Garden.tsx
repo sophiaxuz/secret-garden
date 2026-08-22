@@ -8,15 +8,15 @@ import { Canvas } from "@react-three/fiber";
 // React state connects fast 3D targeting to the slower HTML information interface.
 import { useCallback, useState } from "react";
 // This module casts the center-screen ray and reports flower interactions.
-import { FlowerInteraction } from "./garden/FlowerInteraction";
+import { FlowerInteraction } from "./garden/flower/FlowerInteraction";
 // This native dialog presents a selected flower with correct focus behavior.
-import { FlowerMemoryDialog } from "./garden/FlowerMemoryDialog";
+import { FlowerMemoryDialog } from "./garden/flower/FlowerMemoryDialog";
 // This module owns keyboard, mouse, and touch navigation.
 import { FirstPersonControls } from "./garden/FirstPersonControls";
 // This module contains the physical ground, plants, and trees.
 import { GardenWorld } from "./garden/GardenWorld";
 // The UI and 3D objects share this description of a flower memory.
-import type { FlowerMemory } from "./garden/flower-memory";
+import type { FlowerMemory } from "./garden/flower/flower-memory";
 
 // These are the only facts a caller needs in order to render the garden.
 type GardenProps = {

@@ -1,5 +1,5 @@
 // Flower and Tree hide the geometry details behind small reusable interfaces.
-import { Flower } from "./Flower";
+import { Flower } from "./flower/Flower";
 import { Tree } from "./Tree";
 
 // Each tuple stores coordinates, appearance, and inspectable memory data.
