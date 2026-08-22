@@ -2,6 +2,8 @@
 import { useMemo } from "react";
 // Three supplies constants that are not exposed as JSX components.
 import * as THREE from "three";
+// The memory object gives this visual flower an identity and inspectable content.
+import type { FlowerMemory } from "./flower-memory";
 
 // These values describe one procedural flower instance.
 type FlowerProps = {
@@ -9,6 +11,10 @@ type FlowerProps = {
   position: [number, number, number];
   // This color is applied to every petal.
   color: string;
+  // This data is exposed to the raycasting interaction module.
+  memory: FlowerMemory;
+  // The targeted flower receives a subtle glow.
+  highlighted?: boolean;
   // Scale changes the size of the whole flower group.
   scale?: number;
   // Petal count creates visual variation between flowers.
@@ -21,6 +27,8 @@ type FlowerProps = {
 export function Flower({
   position,
   color,
+  memory,
+  highlighted = false,
   scale = 1,
   petals = 8,
   bell = false,
@@ -37,7 +45,8 @@ export function Flower({
 
   // Grouping the pieces lets position and scale affect the entire flower.
   return (
-    <group position={position} scale={scale}>
+    // `userData` is Three.js's supported place for application-specific metadata.
+    <group position={position} scale={scale} userData={{ flower: memory }}>
       {/* A narrow cylinder forms the stem. */}
       <mesh position={[0, 0.7, 0]}>
         {/* The top and bottom radii differ slightly for an organic taper. */}
@@ -74,6 +83,10 @@ export function Flower({
             {/* Render both sides so petals remain visible from behind. */}
             <meshStandardMaterial
               color={color}
+              // Reuse the petal color as a gentle glow while targeted.
+              emissive={highlighted ? color : "#000000"}
+              // Zero removes the glow entirely from untargeted flowers.
+              emissiveIntensity={highlighted ? 0.55 : 0}
               roughness={0.65}
               side={THREE.DoubleSide}
             />

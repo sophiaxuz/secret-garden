@@ -139,5 +139,8 @@ export function FirstPersonControls({ active }: { active: boolean }) {
   });
 
   // Use pointer lock on desktop; touch rotation is already handled above.
-  return active && !touchDevice ? <PointerLockControls /> : null;
+  return active && !touchDevice ? (
+    // Scope pointer-lock activation to the canvas instead of every document click.
+    <PointerLockControls selector="#garden-canvas" />
+  ) : null;
 }

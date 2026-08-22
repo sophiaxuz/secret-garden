@@ -109,10 +109,12 @@ export default function Home() {
         {/* CSS shows the instruction appropriate for the input device. */}
         <span>
           <span className="desktop-help">
-            click to look · WASD to wander · P to plant · Esc releases
+            click to look · WASD to wander · E to inspect · P to plant · Esc
+            releases
           </span>
           <span className="touch-help">
-            drag to look · hold the path button to walk
+            drag to look · hold the path button to walk · tap a flower to
+            inspect
           </span>
         </span>
       </div>
