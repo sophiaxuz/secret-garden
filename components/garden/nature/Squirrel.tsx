@@ -5,25 +5,138 @@ import { useRef } from "react";
 // Three provides the Group type used by the refs.
 import * as THREE from "three";
 
+// Reuse route endpoints so the animation does not allocate vectors each frame.
+const SQUIRREL_START = new THREE.Vector3(-2.9, 0.26, -1.7);
+const SQUIRREL_END = new THREE.Vector3(-5.1, 0.26, 1.45);
+// Cache the two route headings so the squirrel can prepare before each run.
+const OUTBOUND_HEADING = Math.atan2(
+  SQUIRREL_END.x - SQUIRREL_START.x,
+  SQUIRREL_END.z - SQUIRREL_START.z,
+);
+const RETURN_HEADING = Math.atan2(
+  SQUIRREL_START.x - SQUIRREL_END.x,
+  SQUIRREL_START.z - SQUIRREL_END.z,
+);
+
 // Build a small squirrel pausing near the edge of the path.
 export function Squirrel({ animated = true }: { animated?: boolean }) {
   // This ref moves the whole animal in small alert motions.
   const squirrel = useRef<THREE.Group>(null);
   // This ref swishes the tail separately from the body.
   const tail = useRef<THREE.Group>(null);
+  // Paw refs alternate during a running burst.
+  const leftPaw = useRef<THREE.Mesh>(null);
+  const rightPaw = useRef<THREE.Mesh>(null);
 
   // Animate the squirrel without causing React component rerenders.
-  useFrame(({ clock }) => {
-    // Preserve the animal while stopping continuous motion when requested.
-    if (!animated) return;
+  useFrame(({ clock }, delta) => {
     // Wait until both groups are connected to the scene.
-    if (!squirrel.current || !tail.current) return;
-    // Use one time value so the movements remain coordinated.
-    const time = clock.elapsedTime;
-    // Let the body rise and fall as though sniffing the ground.
-    squirrel.current.position.y = 0.26 + Math.abs(Math.sin(time * 0.9)) * 0.035;
-    // Give the large tail a slow, independent swish.
-    tail.current.rotation.z = -0.35 + Math.sin(time * 1.4) * 0.18;
+    if (
+      !squirrel.current ||
+      !tail.current ||
+      !leftPaw.current ||
+      !rightPaw.current
+    )
+      return;
+    // Return to a stable grounded pose if reduced motion is enabled live.
+    if (!animated) {
+      squirrel.current.position.copy(SQUIRREL_START);
+      squirrel.current.rotation.set(0, OUTBOUND_HEADING, 0);
+      tail.current.rotation.z = -0.35;
+      leftPaw.current.rotation.x = 0.35;
+      rightPaw.current.rotation.x = 0.35;
+      return;
+    }
+    // Loop through pauses and two short scampering journeys.
+    const cycle = clock.elapsedTime % 22;
+    // Each phase chooses targets that the body will blend toward smoothly.
+    let desiredPitch = squirrel.current.rotation.x;
+    let desiredHeading = squirrel.current.rotation.y;
+    // Run energy rises and falls around each burst instead of switching instantly.
+    let runEnergy = 0;
+
+    if (cycle < 4) {
+      // Pause at the starting point and sniff with a small forward lean.
+      squirrel.current.position.copy(SQUIRREL_START);
+      squirrel.current.position.y += Math.abs(Math.sin(cycle * 2.2)) * 0.035;
+      desiredPitch = 0.1 + Math.sin(cycle * 2.2) * 0.06;
+      // Look around early, then face the route just before setting off.
+      const scanAmount = 1 - THREE.MathUtils.smoothstep(cycle, 2.8, 4);
+      desiredHeading =
+        OUTBOUND_HEADING + Math.sin(cycle * 1.1) * 0.28 * scanAmount;
+    } else if (cycle < 9) {
+      // Accelerate smoothly toward cover on the far side of the path.
+      const progress = (cycle - 4) / 5;
+      const eased = THREE.MathUtils.smoothstep(progress, 0, 1);
+      squirrel.current.position.lerpVectors(
+        SQUIRREL_START,
+        SQUIRREL_END,
+        eased,
+      );
+      // Quick repeated bounds make the run read as a squirrel rather than a glide.
+      squirrel.current.position.y +=
+        Math.abs(Math.sin(progress * Math.PI * 9)) * 0.16;
+      desiredPitch = -0.08;
+      desiredHeading = OUTBOUND_HEADING;
+      runEnergy = Math.sin(progress * Math.PI);
+    } else if (cycle < 13) {
+      // Sit upright at the far point and scan the garden before returning.
+      squirrel.current.position.copy(SQUIRREL_END);
+      squirrel.current.position.y += Math.sin(cycle * 2.5) * 0.018;
+      desiredPitch = -0.12;
+      // Turn during the pause and finish facing home before the return burst.
+      const scanAmount = 1 - THREE.MathUtils.smoothstep(cycle, 11.8, 13);
+      desiredHeading =
+        RETURN_HEADING + Math.sin(cycle * 0.9) * 0.28 * scanAmount;
+    } else if (cycle < 18) {
+      // Follow the same bounding gait back toward the original patch.
+      const progress = (cycle - 13) / 5;
+      const eased = THREE.MathUtils.smoothstep(progress, 0, 1);
+      squirrel.current.position.lerpVectors(
+        SQUIRREL_END,
+        SQUIRREL_START,
+        eased,
+      );
+      squirrel.current.position.y +=
+        Math.abs(Math.sin(progress * Math.PI * 9)) * 0.16;
+      desiredPitch = -0.08;
+      desiredHeading = RETURN_HEADING;
+      runEnergy = Math.sin(progress * Math.PI);
+    } else {
+      // Settle at the starting point before the next foraging loop.
+      squirrel.current.position.copy(SQUIRREL_START);
+      desiredPitch = 0;
+      // Turn back toward the foraging route while resting between loops.
+      desiredHeading =
+        OUTBOUND_HEADING +
+        Math.sin(cycle) *
+          0.18 *
+          (1 - THREE.MathUtils.smoothstep(cycle, 20.8, 22));
+    }
+
+    // Blend body pitch so pausing and running never switch in a single frame.
+    squirrel.current.rotation.x = THREE.MathUtils.damp(
+      squirrel.current.rotation.x,
+      desiredPitch,
+      6,
+      delta,
+    );
+    // Measure the shortest signed angle to avoid a sudden full-body spin.
+    const headingDifference = Math.atan2(
+      Math.sin(desiredHeading - squirrel.current.rotation.y),
+      Math.cos(desiredHeading - squirrel.current.rotation.y),
+    );
+    // Turn gradually, including while preparing for the return journey.
+    squirrel.current.rotation.y += headingDifference * Math.min(1, delta * 4.5);
+    // Combine calm tail swishes with a faster balancing motion during a run.
+    tail.current.rotation.z =
+      -0.35 +
+      Math.sin(clock.elapsedTime * 1.5) * 0.16 +
+      Math.sin(clock.elapsedTime * 11) * 0.28 * runEnergy;
+    // Alternate the forepaws rapidly during each running phase.
+    const pawSwing = Math.sin(clock.elapsedTime * 15) * 0.55 * runEnergy;
+    leftPaw.current.rotation.x = 0.35 + pawSwing;
+    rightPaw.current.rotation.x = 0.35 - pawSwing;
   });
 
   // Render a recognizable squirrel silhouette with simple geometry.
@@ -106,6 +219,7 @@ export function Squirrel({ animated = true }: { animated?: boolean }) {
       ))}
       {/* Small forepaws in front of the chest strengthen the animal silhouette. */}
       <mesh
+        ref={leftPaw}
         position={[-0.18, 0.08, 0.5]}
         rotation={[0.35, 0, -0.22]}
         scale={[0.13, 0.28, 0.12]}
@@ -114,6 +228,7 @@ export function Squirrel({ animated = true }: { animated?: boolean }) {
         <meshStandardMaterial color="#76543c" roughness={1} />
       </mesh>
       <mesh
+        ref={rightPaw}
         position={[0.18, 0.08, 0.5]}
         rotation={[0.35, 0, 0.22]}
         scale={[0.13, 0.28, 0.12]}

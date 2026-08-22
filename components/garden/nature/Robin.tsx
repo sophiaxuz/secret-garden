@@ -1,70 +1,218 @@
-// The robin uses the shared render loop for subtle living motion.
+// The robin uses the shared render loop for hopping and flight.
 import { useFrame } from "@react-three/fiber";
-// A ref exposes the bird's outer group to the animation callback.
+// Refs expose the bird and its moving parts to animation code.
 import { useRef } from "react";
-// Three provides the type used by that group ref.
+// Three provides group types, interpolation helpers, and vectors.
 import * as THREE from "three";
 
-// Build a small stylized European robin perched beside the path.
-export function Robin({ animated = true }: { animated?: boolean }) {
-  // This group contains every visible part of the bird.
-  const robin = useRef<THREE.Group>(null);
+// Reuse route endpoints rather than allocating new vectors every frame.
+const GROUND_START = new THREE.Vector3(1.25, 0.23, 1.5);
+const GROUND_END = new THREE.Vector3(2.2, 0.23, 0.75);
+const PERCH = new THREE.Vector3(3.45, 1.75, -1.1);
 
-  // Add breathing, head-turning, and occasional hopping motion.
-  useFrame(({ clock }) => {
-    // Preserve the animal while stopping continuous motion when requested.
-    if (!animated) return;
-    // Wait until the group exists in the scene.
-    if (!robin.current) return;
-    // Use elapsed time so the motion remains smooth across frame rates.
-    const time = clock.elapsedTime;
-    // A gentle vertical movement suggests breathing and alertness.
-    robin.current.position.y = 0.62 + Math.sin(time * 2.3) * 0.015;
-    // Small turns make the robin appear to watch the visitor.
-    robin.current.rotation.y = -0.45 + Math.sin(time * 0.7) * 0.22;
+// Copy an interpolated position and add a curved flight arc.
+function flyBetween(
+  bird: THREE.Group,
+  start: THREE.Vector3,
+  end: THREE.Vector3,
+  progress: number,
+): number {
+  // Smoothstep prevents abrupt acceleration at takeoff and landing.
+  const eased = THREE.MathUtils.smoothstep(progress, 0, 1);
+  // Interpolate each world coordinate between the route endpoints.
+  bird.position.lerpVectors(start, end, eased);
+  // A sine arc raises the bird between its two endpoints.
+  bird.position.y += Math.sin(progress * Math.PI) * 0.65;
+  // Return the travel direction so the caller can turn toward it gradually.
+  return Math.atan2(end.x - start.x, end.z - start.z);
+}
+
+// Build a stylized European robin with a repeating natural behavior cycle.
+export function Robin({ animated = true }: { animated?: boolean }) {
+  // This group moves the complete bird through the garden.
+  const robin = useRef<THREE.Group>(null);
+  // The head turns independently while the robin watches its surroundings.
+  const head = useRef<THREE.Group>(null);
+  // Wing groups unfold and flap during the flight phases.
+  const leftWing = useRef<THREE.Group>(null);
+  const rightWing = useRef<THREE.Group>(null);
+
+  // Run an eighteen-second hop, fly, perch, and return sequence.
+  useFrame(({ clock }, delta) => {
+    // Wait until every animated group exists in the scene.
+    if (
+      !robin.current ||
+      !head.current ||
+      !leftWing.current ||
+      !rightWing.current
+    )
+      return;
+    // Return to a grounded resting pose if reduced motion is enabled live.
+    if (!animated) {
+      robin.current.position.copy(GROUND_START);
+      robin.current.rotation.set(0, 0.2, 0);
+      head.current.rotation.y = 0;
+      leftWing.current.rotation.z = 0.43;
+      rightWing.current.rotation.z = -0.43;
+      return;
+    }
+    // Loop the behavior without requiring React state updates.
+    const cycle = clock.elapsedTime % 18;
+    // Track whether wings should be visibly flapping this frame.
+    const flying = (cycle >= 5 && cycle < 8) || (cycle >= 12 && cycle < 15);
+    // Begin with the current heading so each behavioral phase can choose a target.
+    let desiredHeading = robin.current.rotation.y;
+    // Ease wing effort in after takeoff and out before landing.
+    let flightEffort = 0;
+
+    if (cycle < 5) {
+      // Divide the ground phase into four distinct hops.
+      const hopNumber = Math.min(3, Math.floor(cycle / 1.25));
+      const hopProgress = (cycle % 1.25) / 1.25;
+      const routeProgress = (hopNumber + hopProgress) / 4;
+      // Move forward steadily while the sine curve lifts each hop.
+      robin.current.position.lerpVectors(
+        GROUND_START,
+        GROUND_END,
+        routeProgress,
+      );
+      robin.current.position.y += Math.sin(hopProgress * Math.PI) * 0.22;
+      desiredHeading = Math.atan2(
+        GROUND_END.x - GROUND_START.x,
+        GROUND_END.z - GROUND_START.z,
+      );
+    } else if (cycle < 8) {
+      // Take a short arcing flight from the path to a low perch.
+      const progress = (cycle - 5) / 3;
+      desiredHeading = flyBetween(robin.current, GROUND_END, PERCH, progress);
+      flightEffort = Math.sin(progress * Math.PI);
+    } else if (cycle < 12) {
+      // Rest on the perch with small breathing motion.
+      robin.current.position.copy(PERCH);
+      robin.current.position.y += Math.sin(cycle * 2.4) * 0.018;
+      desiredHeading = -1.15 + Math.sin(cycle * 0.8) * 0.18;
+    } else if (cycle < 15) {
+      // Fly back toward the path along the reverse arc.
+      const progress = (cycle - 12) / 3;
+      desiredHeading = flyBetween(robin.current, PERCH, GROUND_START, progress);
+      flightEffort = Math.sin(progress * Math.PI);
+    } else {
+      // Pause on the path and look around before hopping again.
+      robin.current.position.copy(GROUND_START);
+      robin.current.position.y += Math.sin(cycle * 2.2) * 0.012;
+      desiredHeading = 0.2 + Math.sin(cycle * 1.1) * 0.35;
+    }
+
+    // Measure the shortest signed angle so turns never spin the long way around.
+    const headingDifference = Math.atan2(
+      Math.sin(desiredHeading - robin.current.rotation.y),
+      Math.cos(desiredHeading - robin.current.rotation.y),
+    );
+    // Blend toward the target direction instead of snapping between phases.
+    robin.current.rotation.y += headingDifference * Math.min(1, delta * 4.5);
+    // Turn the head more quickly than the body to create alert bird behavior.
+    head.current.rotation.y = Math.sin(cycle * 2.1) * 0.32;
+    // Fold wings against the body on the ground and open them in flight.
+    const flap = flying
+      ? 0.08 + Math.sin(clock.elapsedTime * 18) * 0.85 * flightEffort
+      : 0.08;
+    leftWing.current.rotation.z = 0.35 + flap;
+    rightWing.current.rotation.z = -0.35 - flap;
   });
 
-  // Render the bird from a handful of warm, rounded primitives.
+  // Render the robin from lightweight rounded primitives.
   return (
-    <group ref={robin} position={[1.25, 0.62, 1.5]} scale={0.34}>
-      {/* A rounded brown shape forms the robin's body. */}
-      <mesh scale={[0.75, 1, 0.72]}>
-        <sphereGeometry args={[0.55, 18, 12]} />
-        <meshStandardMaterial color="#6a4937" roughness={0.95} />
-      </mesh>
-      {/* The orange-red breast is the robin's defining field mark. */}
-      <mesh position={[0, 0.03, 0.39]} scale={[0.54, 0.72, 0.18]}>
-        <sphereGeometry args={[0.5, 18, 12]} />
-        <meshStandardMaterial color="#c65b35" roughness={0.9} />
-      </mesh>
-      {/* A smaller sphere creates the head. */}
-      <mesh position={[0, 0.58, 0.08]}>
-        <sphereGeometry args={[0.38, 18, 12]} />
-        <meshStandardMaterial color="#574237" roughness={0.95} />
-      </mesh>
-      {/* Two tiny dark spheres create the eyes. */}
-      <mesh position={[-0.2, 0.68, 0.35]}>
-        <sphereGeometry args={[0.045, 8, 6]} />
-        <meshBasicMaterial color="#0e1110" />
-      </mesh>
-      <mesh position={[0.2, 0.68, 0.35]}>
-        <sphereGeometry args={[0.045, 8, 6]} />
-        <meshBasicMaterial color="#0e1110" />
-      </mesh>
-      {/* A short cone becomes the pointed beak. */}
-      <mesh position={[0, 0.57, 0.49]} rotation={[Math.PI / 2, 0, 0]}>
-        <coneGeometry args={[0.08, 0.28, 8]} />
-        <meshStandardMaterial color="#26231d" roughness={0.9} />
-      </mesh>
-      {/* A flattened shape behind the body suggests a tail. */}
-      <mesh
-        position={[0, -0.12, -0.56]}
-        rotation={[0.3, 0, 0]}
-        scale={[0.38, 0.12, 0.75]}
-      >
-        <sphereGeometry args={[0.5, 12, 8]} />
-        <meshStandardMaterial color="#4a392f" roughness={1} />
-      </mesh>
-    </group>
+    <>
+      {/* Give the flight route a physical destination instead of an invisible perch. */}
+      <group position={[PERCH.x, 0, PERCH.z]}>
+        {/* A slender weathered stem supports the low horizontal branch. */}
+        <mesh position={[0, 0.74, 0]}>
+          <cylinderGeometry args={[0.085, 0.14, 1.48, 8]} />
+          <meshStandardMaterial color="#54412d" roughness={1} />
+        </mesh>
+        {/* The robin's feet land on this branch at the end of the flight arc. */}
+        <mesh position={[-0.22, 1.48, 0]} rotation={[0, 0, Math.PI / 2]}>
+          <cylinderGeometry args={[0.065, 0.09, 0.86, 8]} />
+          <meshStandardMaterial color="#624a32" roughness={1} />
+        </mesh>
+        {/* A short angled twig keeps the perch from looking manufactured. */}
+        <mesh position={[-0.5, 1.68, 0]} rotation={[0, 0, -0.55]}>
+          <cylinderGeometry args={[0.028, 0.045, 0.48, 7]} />
+          <meshStandardMaterial color="#624a32" roughness={1} />
+        </mesh>
+      </group>
+      {/* This group holds and moves every visible part of the robin. */}
+      <group ref={robin} position={GROUND_START.toArray()} scale={0.34}>
+        {/* A rounded brown shape forms the robin's body. */}
+        <mesh scale={[0.75, 1, 0.72]}>
+          <sphereGeometry args={[0.55, 18, 12]} />
+          <meshStandardMaterial color="#6a4937" roughness={0.95} />
+        </mesh>
+        {/* The orange-red breast is the robin's defining field mark. */}
+        <mesh position={[0, 0.03, 0.39]} scale={[0.54, 0.72, 0.18]}>
+          <sphereGeometry args={[0.5, 18, 12]} />
+          <meshStandardMaterial color="#c65b35" roughness={0.9} />
+        </mesh>
+        {/* The left wing hinges outward during flight. */}
+        <group
+          ref={leftWing}
+          position={[-0.38, 0.02, -0.02]}
+          rotation={[0, 0, 0.43]}
+        >
+          <mesh scale={[0.18, 0.65, 0.42]}>
+            <sphereGeometry args={[0.7, 12, 8]} />
+            <meshStandardMaterial color="#594033" roughness={1} />
+          </mesh>
+        </group>
+        {/* The right wing mirrors the left wing. */}
+        <group
+          ref={rightWing}
+          position={[0.38, 0.02, -0.02]}
+          rotation={[0, 0, -0.43]}
+        >
+          <mesh scale={[0.18, 0.65, 0.42]}>
+            <sphereGeometry args={[0.7, 12, 8]} />
+            <meshStandardMaterial color="#594033" roughness={1} />
+          </mesh>
+        </group>
+        {/* Group the head, eyes, and beak so they turn together. */}
+        <group ref={head} position={[0, 0.58, 0.08]}>
+          <mesh>
+            <sphereGeometry args={[0.38, 18, 12]} />
+            <meshStandardMaterial color="#574237" roughness={0.95} />
+          </mesh>
+          <mesh position={[-0.2, 0.1, 0.27]}>
+            <sphereGeometry args={[0.045, 8, 6]} />
+            <meshBasicMaterial color="#0e1110" />
+          </mesh>
+          <mesh position={[0.2, 0.1, 0.27]}>
+            <sphereGeometry args={[0.045, 8, 6]} />
+            <meshBasicMaterial color="#0e1110" />
+          </mesh>
+          <mesh position={[0, -0.01, 0.41]} rotation={[Math.PI / 2, 0, 0]}>
+            <coneGeometry args={[0.08, 0.28, 8]} />
+            <meshStandardMaterial color="#26231d" roughness={0.9} />
+          </mesh>
+        </group>
+        {/* Two simple legs make ground hops visually connect with the path. */}
+        <mesh position={[-0.15, -0.55, 0.08]}>
+          <cylinderGeometry args={[0.025, 0.025, 0.32, 6]} />
+          <meshStandardMaterial color="#34291f" roughness={1} />
+        </mesh>
+        <mesh position={[0.15, -0.55, 0.08]}>
+          <cylinderGeometry args={[0.025, 0.025, 0.32, 6]} />
+          <meshStandardMaterial color="#34291f" roughness={1} />
+        </mesh>
+        {/* A flattened shape behind the body suggests a tail. */}
+        <mesh
+          position={[0, -0.12, -0.56]}
+          rotation={[0.3, 0, 0]}
+          scale={[0.38, 0.12, 0.75]}
+        >
+          <sphereGeometry args={[0.5, 12, 8]} />
+          <meshStandardMaterial color="#4a392f" roughness={1} />
+        </mesh>
+      </group>
+    </>
   );
 }

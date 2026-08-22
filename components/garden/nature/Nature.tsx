@@ -1,3 +1,5 @@
+// React state and effects observe the visitor's reduced-motion preference.
+import { useEffect, useState } from "react";
 // Group the garden's moving animal life behind one small scene interface.
 import { Butterfly } from "./Butterfly";
 import { Robin } from "./Robin";
@@ -49,5 +51,3 @@ export function Nature() {
     </>
   );
 }
-// React state and effects observe the visitor's reduced-motion preference.
-import { useEffect, useState } from "react";
