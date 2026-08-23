@@ -5,8 +5,8 @@ import { createGrassTuftGeometry } from "./grass-geometry";
 // Three's vectors make triangle-area and normal-length checks easy to read.
 import * as THREE from "three";
 
-// Protect the soft, grounded tuft silhouette that replaced the narrow spike.
-test("grass geometry is a broad tuft of bent ribbons rather than a cone", () => {
+// Protect the fine, layered meadow silhouette that replaced the chunky first draft.
+test("grass geometry forms a slender layered meadow tuft", () => {
   // Build the same reusable geometry that Grass mounts into its instanced mesh.
   const geometry = createGrassTuftGeometry();
   // Calculate exact local extents from the generated blade vertices.
@@ -26,8 +26,20 @@ test("grass geometry is a broad tuft of bent ribbons rather than a cone", () => 
   expect(bounds.max.x - bounds.min.x).toBeGreaterThan(0.15);
   // Differently oriented blades keep the tuft visible from the side as well.
   expect(bounds.max.z - bounds.min.z).toBeGreaterThan(0.15);
-  // Multiple segmented ribbons supply enough vertices for gentle bends.
-  expect(geometry.getAttribute("position").count).toBeGreaterThanOrEqual(24);
+  // Many slim segmented ribbons overlap into a soft tuft instead of three broad fins.
+  expect(geometry.getAttribute("position").count).toBeGreaterThanOrEqual(70);
+  // A subtle per-vertex gradient gives the base and tips natural tonal variation.
+  const colors = geometry.getAttribute("color");
+  // Every rendered vertex needs a matching colour so the gradient stays continuous.
+  expect(colors.count).toBe(geometry.getAttribute("position").count);
+  // Collect green-channel shades to verify that the tuft is not one flat colour.
+  const greenShades = Array.from({ length: colors.count }, (_, vertex) =>
+    colors.getY(vertex),
+  );
+  // Dark roots and brighter tips should create a clearly visible tonal range.
+  expect(Math.max(...greenShades) - Math.min(...greenShades)).toBeGreaterThan(
+    0.3,
+  );
   // Read the indexed triangles and vertex positions used by the renderer.
   const index = geometry.getIndex();
   const positions = geometry.getAttribute("position");
