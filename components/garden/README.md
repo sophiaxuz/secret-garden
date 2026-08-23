@@ -11,6 +11,7 @@ The garden is organised by responsibility so related rendering, data, and tests 
 | `audio/` | The browser Web Audio soundscape |
 | `flora/` | Flowers, trees, placement data, and flora composition |
 | `interaction/` | Target registration, raycasting, and inspection UI |
+| `lighting/` | UK time, Sun and Moon atmosphere, and world shadow policy |
 | `navigation/` | First-person input, boundaries, and collision |
 | `terrain/` | Ground, path, grass rendering, and grass geometry |
 

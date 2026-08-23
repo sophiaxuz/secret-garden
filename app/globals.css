@@ -65,10 +65,34 @@ button {
   left: 5vw;
   font: 15px var(--serif);
 }
-/* Give the separator a warmer color and breathing room. */
-.garden-name i {
-  color: #c6b276;
-  margin: 0 12px;
+/* Place the real UK clock directly beneath the garden's name. */
+.garden-time {
+  position: absolute;
+  z-index: 5;
+  top: calc(5vh + 25px);
+  left: 5vw;
+  display: grid;
+  gap: 2px;
+  color: #f3ead2;
+  text-shadow: 0 2px 16px #08140eaa;
+  pointer-events: none;
+}
+/* Make seconds feel calm and precise instead of behaving like shifting text. */
+.garden-time time {
+  font: 21px/1 var(--serif);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+}
+/* Identify daylight-saving time and the garden's current natural phase. */
+.garden-time span {
+  font: 8px/1.5 var(--sans);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+/* Keep the full date present but visually quieter than the live clock. */
+.garden-time small {
+  font: italic 11px/1.4 var(--serif);
+  color: #d5d3be;
 }
 /* Vertically center the opening copy and prepare it for an exit transition. */
 .threshold-copy {
@@ -242,6 +266,9 @@ button {
   }
   .garden-name {
     font-size: 13px;
+  }
+  .garden-time time {
+    font-size: 18px;
   }
   .memory-tally {
     display: none;

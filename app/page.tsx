@@ -107,10 +107,8 @@ export default function Home() {
       <div className="vignette" />
       <div className="grain" />
 
-      {/* This label establishes the garden's place, season, and time. */}
-      <div className="garden-name">
-        The Secret Garden <i>·</i> Spring, first light
-      </div>
+      {/* This label names the place while the live clock supplies season and time. */}
+      <div className="garden-name">The Secret Garden</div>
       {/* This doorway is visible before the visitor enters. */}
       <section className="threshold-copy">
         {/* The quiet opening line sets the emotional context. */}

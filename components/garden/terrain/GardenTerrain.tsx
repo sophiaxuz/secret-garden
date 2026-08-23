@@ -9,7 +9,11 @@ export function GardenTerrain() {
   return (
     <>
       {/* Rotate a large plane flat to create the garden floor. */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+      <mesh
+        rotation={[-Math.PI / 2, 0, 0]}
+        receiveShadow
+        userData={{ shadowCaster: false }}
+      >
         {/* The plane spans beyond the fog, so visitors never see its edge. */}
         <planeGeometry
           args={[GARDEN_LAYOUT.groundWidth, GARDEN_LAYOUT.groundDepth, 1, 1]}
@@ -21,6 +25,8 @@ export function GardenTerrain() {
       <mesh
         position={[0, 0.012, GARDEN_LAYOUT.pathCenterZ]}
         rotation={[-Math.PI / 2, 0, 0]}
+        receiveShadow
+        userData={{ shadowCaster: false }}
       >
         <planeGeometry
           args={[GARDEN_LAYOUT.pathWidth, GARDEN_LAYOUT.pathLength]}

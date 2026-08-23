@@ -2,6 +2,8 @@
 import { GardenAnimals } from "./animals/GardenAnimals";
 // GardenFlora owns flower generation, tree placement, and plant highlighting.
 import { GardenFlora } from "./flora/GardenFlora";
+// GardenShadowGroup applies one shadow policy to the whole physical world.
+import { GardenShadowGroup } from "./lighting/GardenShadowGroup";
 // GardenTerrain owns the ground, path, and instanced meadow grass.
 import { GardenTerrain } from "./terrain/GardenTerrain";
 
@@ -15,9 +17,9 @@ export function GardenWorld({
   // This id crosses the world seam into flora and animal highlighting.
   targetedItemId: string | null;
 }) {
-  // A fragment combines the world modules without adding a transform node.
+  // One untransformed group lets the cross-cutting shadow policy reach the world.
   return (
-    <>
+    <GardenShadowGroup refreshKey={plantedCount}>
       {/* Terrain establishes the surfaces beneath every other world object. */}
       <GardenTerrain />
       {/* Flora owns every initial, planted, or tree-shaped garden landmark. */}
@@ -27,6 +29,6 @@ export function GardenWorld({
       />
       {/* Animals add independently animated, inspectable life to the world. */}
       <GardenAnimals targetedItemId={targetedItemId} />
-    </>
+    </GardenShadowGroup>
   );
 }

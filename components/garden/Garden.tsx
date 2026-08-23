@@ -1,8 +1,8 @@
 // This module renders in the browser because WebGL is not available on the server.
 "use client";
 
-// `Environment` supplies reflections while `Sky` creates a daylight atmosphere.
-import { Environment, Sky } from "@react-three/drei";
+// `Environment` supplies reflections that adapt to the garden's current light.
+import { Environment } from "@react-three/drei";
 // `Canvas` creates the Three.js renderer, scene, and camera for React.
 import { Canvas } from "@react-three/fiber";
 // React state connects fast 3D targeting to the slower HTML information interface.
@@ -19,6 +19,12 @@ import { GardenInteraction } from "./interaction/GardenInteraction";
 import { GardenInspectionDialog } from "./interaction/GardenInspectionDialog";
 // This provider limits raycasting to registered garden-life hit volumes.
 import { GardenInteractionRegistryProvider } from "./interaction/GardenInteractionRegistry";
+// This HTML clock displays the same UK time that controls the celestial lights.
+import { GardenClock } from "./lighting/GardenClock";
+// This module owns the sky, visible Sun and Moon, and directional shadows.
+import { GardenLighting } from "./lighting/GardenLighting";
+// This hook updates a London-based astronomical snapshot once per second.
+import { useUkGardenTime } from "./lighting/use-uk-garden-time";
 // The UI and 3D objects share one inspectable garden identity.
 import {
   GARDEN_ITEM_LANGUAGE,
@@ -39,6 +45,8 @@ export default function Garden({ plantedCount, entered }: GardenProps) {
   const [targetedItem, setTargetedItem] = useState<GardenItem | null>(null);
   // Track the garden item whose full inspection card is open.
   const [selectedItem, setSelectedItem] = useState<GardenItem | null>(null);
+  // Share one live UK snapshot between the WebGL sky and the HTML clock.
+  const gardenTime = useUkGardenTime();
 
   // Keep this callback stable so GardenInteraction does not reattach its listeners.
   const inspectItem = useCallback((item: GardenItem) => {
@@ -65,34 +73,10 @@ export default function Garden({ plantedCount, entered }: GardenProps) {
           fov: 62,
         }}
         dpr={[1, 1.6]}
-        shadows
+        shadows="soft"
       >
-        {/* Keep a blue fallback behind the procedural sky dome. */}
-        <color attach="background" args={["#8fc8e8"]} />
-        {/* Fade distant objects into a pale horizon to create atmospheric depth. */}
-        <fog attach="fog" args={["#b9d8dc", 24, 58]} />
-        {/* Model a bright blue sky with a low, warm morning sun. */}
-        <Sky
-          distance={450000}
-          sunPosition={[-4, 3, -8]}
-          inclination={0.52}
-          azimuth={0.22}
-          turbidity={7}
-          rayleigh={2.2}
-        />
-        {/* Light upward and downward surfaces with different colors. */}
-        <hemisphereLight
-          intensity={1.15}
-          color="#fff2ca"
-          groundColor="#243626"
-        />
-        {/* Model warm sunlight coming from one direction. */}
-        <directionalLight
-          position={[-5, 9, 4]}
-          intensity={2.3}
-          color="#ffe5ad"
-          castShadow
-        />
+        {/* Make atmosphere and shadow direction follow the live UK sky. */}
+        <GardenLighting time={gardenTime} />
         {/* Share one narrow interaction registry between life and raycaster. */}
         <GardenInteractionRegistryProvider>
           {/* Pass the target id down so the matching garden life can glow. */}
@@ -108,10 +92,16 @@ export default function Garden({ plantedCount, entered }: GardenProps) {
           />
         </GardenInteractionRegistryProvider>
         {/* Use Drei's forest lighting preset for natural reflections. */}
-        <Environment preset="forest" />
+        <Environment
+          preset="forest"
+          environmentIntensity={gardenTime.environmentIntensity}
+        />
         {/* Enable navigation only after the threshold has been crossed. */}
         <FirstPersonControls active={entered && !selectedItem} />
       </Canvas>
+
+      {/* Keep civil time visible without placing HTML inside the WebGL canvas. */}
+      <GardenClock time={gardenTime} />
 
       {/* Tell the visitor when the reticle is close enough to inspect garden life. */}
       {targetedItem && !selectedItem && (
