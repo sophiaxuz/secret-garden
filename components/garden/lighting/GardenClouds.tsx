@@ -7,77 +7,16 @@ import { useFrame } from "@react-three/fiber";
 // Three.js supplies the concrete group type stored by the reference.
 import type { Group } from "three";
 // The pure helper wraps drifting banks invisibly beyond the garden horizon.
-import { advanceCloudPosition } from "./garden-clouds";
+import {
+  advanceCloudPosition,
+  CLOUD_BANKS,
+  type CloudBankDescription,
+} from "./garden-clouds";
 // The current light phase lets clouds inherit daytime, twilight, or moonlight color.
 import type { GardenLightPhase } from "./uk-garden-time";
 
 // This local radial texture gives every cloud particle a feathered edge offline.
 const SOFT_CLOUD_TEXTURE = "/cloud-soft.svg";
-
-// A tuple documents positions in the same x, y, z order Three.js expects.
-type CloudPosition = [number, number, number];
-// A separate tuple name distinguishes spatial size from world position.
-type CloudBounds = [number, number, number];
-
-// Each bank has a stable identity, silhouette, position, and wind speed.
-type CloudBankDescription = {
-  // A stable key lets React preserve motion while the clock changes color.
-  id: string;
-  // The seed makes its puff arrangement deterministic between visits.
-  seed: number;
-  // Position places it high enough to feel overhead rather than like garden fog.
-  position: CloudPosition;
-  // Bounds shape each bank into a broad, shallow natural formation.
-  bounds: CloudBounds;
-  // Scale creates distant variation without increasing particle count.
-  scale: number;
-  // Drift speed is measured in world units per second.
-  driftSpeed: number;
-};
-
-// Five separated banks create depth without turning the blue sky overcast.
-const CLOUD_BANKS: CloudBankDescription[] = [
-  {
-    id: "western-cumulus",
-    seed: 2,
-    position: [-42, 18, -24],
-    bounds: [9, 2.2, 3.4],
-    scale: 1.15,
-    driftSpeed: 0.42,
-  },
-  {
-    id: "high-meadow-cloud",
-    seed: 7,
-    position: [-17, 23, -36],
-    bounds: [12, 1.8, 3],
-    scale: 1.35,
-    driftSpeed: 0.31,
-  },
-  {
-    id: "garden-cumulus",
-    seed: 13,
-    position: [8, 20, -18],
-    bounds: [8, 2.8, 3.6],
-    scale: 1,
-    driftSpeed: 0.48,
-  },
-  {
-    id: "eastern-wisp",
-    seed: 19,
-    position: [31, 25, -30],
-    bounds: [13, 1.5, 2.8],
-    scale: 1.25,
-    driftSpeed: 0.36,
-  },
-  {
-    id: "near-sky-cloud",
-    seed: 29,
-    position: [46, 17, -8],
-    bounds: [7, 2, 3],
-    scale: 0.9,
-    driftSpeed: 0.54,
-  },
-];
 
 // Describe the changing atmosphere needed by the full cloud field.
 type GardenCloudsProps = {
