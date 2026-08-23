@@ -1,35 +1,37 @@
-// React calculates the deterministic blade layout once and applies it after mounting.
-import { useLayoutEffect, useMemo, useRef } from "react";
+// React builds shared geometry and deterministic tuft transforms once per mount.
+import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
 // Three supplies the reusable transform and color objects for instancing.
 import * as THREE from "three";
-// Shared dimensions keep every blade inside the habitat and away from the path.
+// Shared dimensions keep every tuft inside the habitat and away from the path.
 import { GARDEN_LAYOUT } from "./garden-layout";
+// This factory creates three soft ribbon blades behind one reusable geometry.
+import { createGrassTuftGeometry } from "./grass-geometry";
 
-// This is the number of candidate positions scattered across the garden.
-const GRASS_BLADE_CANDIDATES = 320;
+// More small tufts create ground cover without increasing draw-call count.
+const GRASS_TUFT_CANDIDATES = 720;
 // One light and one dark green reproduce the previous alternating grass colors.
 const LIGHT_GRASS = new THREE.Color("#79905c");
 const DARK_GRASS = new THREE.Color("#57724c");
 
-// Each record contains everything needed to transform and color one shared blade.
-type GrassBlade = {
+// Each record contains everything needed to transform and color one shared tuft.
+type GrassTuft = {
   // Keep the original index so rotations, heights, and colors remain deterministic.
   index: number;
-  // X and Z place the blade horizontally within the garden.
+  // X and Z place the tuft horizontally within the garden.
   x: number;
   z: number;
 };
 
 // Render the complete field as one instanced mesh instead of hundreds of mesh objects.
 export function Grass() {
-  // Calculate the blade layout only when this module first enters the scene.
-  const blades = useMemo(() => {
+  // Calculate the tuft layout only when this module first enters the scene.
+  const tufts = useMemo(() => {
     // Calculate the complete walkable width for deterministic scattering.
     const gardenWidth = GARDEN_LAYOUT.bounds.maxX - GARDEN_LAYOUT.bounds.minX;
     // Calculate the complete walkable depth for the same reason.
     const gardenDepth = GARDEN_LAYOUT.bounds.maxZ - GARDEN_LAYOUT.bounds.minZ;
-    // Build every candidate and discard only blades that would cover the path.
-    return Array.from({ length: GRASS_BLADE_CANDIDATES }, (_, index) => {
+    // Build every candidate and discard only tufts that would cover the path.
+    return Array.from({ length: GRASS_TUFT_CANDIDATES }, (_, index) => {
       // Modular arithmetic scatters X positions predictably across the field.
       const x = ((index * 2.37) % gardenWidth) + GARDEN_LAYOUT.bounds.minX;
       // A different multiplier prevents Z positions from repeating with X.
@@ -38,12 +40,20 @@ export function Grass() {
       if (Math.abs(x) < GARDEN_LAYOUT.pathWidth / 2 + 0.35) return null;
       // Retain only the small values needed to build this instance later.
       return { index, x, z };
-    }).filter((blade): blade is GrassBlade => blade !== null);
+    }).filter((tuft): tuft is GrassTuft => tuft !== null);
   }, []);
+  // Build one normalized three-blade tuft shared by every field instance.
+  const tuftGeometry = useMemo(() => createGrassTuftGeometry(), []);
   // This ref exposes the single Three.js instanced mesh after it mounts.
   const grass = useRef<THREE.InstancedMesh>(null);
 
-  // Fill the shared mesh with one matrix and color for every visible blade.
+  // Release the manually created geometry when the grass field unmounts.
+  useEffect(() => {
+    // Disposal frees its GPU buffers after React removes the instanced mesh.
+    return () => tuftGeometry.dispose();
+  }, [tuftGeometry]);
+
+  // Fill the shared mesh with one matrix and color for every visible tuft.
   useLayoutEffect(() => {
     // Stop until React has attached the Three.js mesh to the ref.
     if (!grass.current) return;
@@ -52,24 +62,25 @@ export function Grass() {
     // Reuse one temporary object while composing all instance matrices.
     const transform = new THREE.Object3D();
     // Apply the deterministic transform and color to each instance slot.
-    blades.forEach((blade, instanceIndex) => {
-      // Preserve the original position and varied leaning direction.
-      transform.position.set(blade.x, 0.2, blade.z);
-      transform.rotation.set(
-        0,
-        blade.index * 0.7,
-        ((blade.index % 3) - 1) * 0.14,
+    tufts.forEach((tuft, instanceIndex) => {
+      // Ground every ribbon base just above the floor to prevent z-fighting.
+      transform.position.set(tuft.x, 0.008, tuft.z);
+      // Rotate complete tufts around Y so their bends face varied directions.
+      transform.rotation.set(0, tuft.index * 0.7, 0);
+      // Vary width, height, and depth while retaining the soft tuft silhouette.
+      transform.scale.set(
+        0.82 + (tuft.index % 4) * 0.08,
+        0.38 + (tuft.index % 6) * 0.045,
+        0.82 + ((tuft.index + 2) % 4) * 0.08,
       );
-      // Scale one unit-height cone to preserve the previous height variation.
-      transform.scale.set(1, 0.4 + (blade.index % 5) * 0.06, 1);
       // Convert position, rotation, and scale into one GPU instance matrix.
       transform.updateMatrix();
-      // Store that matrix in this blade's instance slot.
+      // Store that matrix in this tuft's instance slot.
       grassMesh.setMatrixAt(instanceIndex, transform.matrix);
-      // Preserve the original alternating green palette per blade.
+      // Preserve the original alternating green palette per tuft.
       grassMesh.setColorAt(
         instanceIndex,
-        blade.index % 3 ? DARK_GRASS : LIGHT_GRASS,
+        tuft.index % 3 ? DARK_GRASS : LIGHT_GRASS,
       );
     });
     // Tell Three.js to upload the completed matrices to the GPU.
@@ -78,15 +89,17 @@ export function Grass() {
     if (grassMesh.instanceColor) grassMesh.instanceColor.needsUpdate = true;
     // Recalculate the shared bounds so off-screen grass can be culled correctly.
     grassMesh.computeBoundingSphere();
-  }, [blades]);
+  }, [tufts]);
 
-  // One shared geometry and material now render every grass blade in one draw call.
+  // One shared geometry and material render every grass tuft in one draw call.
   return (
-    <instancedMesh ref={grass} args={[undefined, undefined, blades.length]}>
-      {/* A unit-height cone receives each blade's individual height through its matrix. */}
-      <coneGeometry args={[0.035, 1, 5]} />
-      {/* Instance colors let one material preserve both greens across all blades. */}
-      <meshStandardMaterial vertexColors roughness={1} />
+    <instancedMesh ref={grass} args={[tuftGeometry, undefined, tufts.length]}>
+      {/* Instance colors let one material preserve both greens across all tufts. */}
+      <meshStandardMaterial
+        vertexColors
+        roughness={1}
+        side={THREE.DoubleSide}
+      />
     </instancedMesh>
   );
 }
