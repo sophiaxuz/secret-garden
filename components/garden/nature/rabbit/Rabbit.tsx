@@ -4,6 +4,8 @@ import { useFrame } from "@react-three/fiber";
 import { useRef } from "react";
 // Three supplies vectors, groups, and smooth interpolation helpers.
 import * as THREE from "three";
+// RabbitModel keeps all visible mesh geometry out of this behavior module.
+import { RabbitModel, type RabbitRig } from "./RabbitModel";
 
 // These reusable vectors describe the rabbit's short foraging route.
 const RABBIT_START = new THREE.Vector3(4.4, 0.26, 2.35);
@@ -27,6 +29,8 @@ export function Rabbit({ animated = true }: { animated?: boolean }) {
   // Ear refs create separate alert twitches.
   const leftEar = useRef<THREE.Mesh>(null);
   const rightEar = useRef<THREE.Mesh>(null);
+  // Package the model's internal attachment points behind one private interface.
+  const rig: RabbitRig = { head, leftEar, rightEar };
 
   // Repeat a sixteen-second forage, bound, listen, and return sequence.
   useFrame(({ clock }, delta) => {
@@ -117,7 +121,7 @@ export function Rabbit({ animated = true }: { animated?: boolean }) {
       -0.08 + Math.sin(clock.elapsedTime * 1.9 + 1.2) * 0.045;
   });
 
-  // Render the rabbit from soft low-poly shapes matching the other animals.
+  // Keep the root transform with behavior while delegating visible geometry.
   return (
     <group
       ref={rabbit}
@@ -125,79 +129,7 @@ export function Rabbit({ animated = true }: { animated?: boolean }) {
       rotation={[0, OUTBOUND_HEADING, 0]}
       scale={0.55}
     >
-      {/* A long rounded body creates the rabbit's crouched silhouette. */}
-      <mesh scale={[0.66, 0.58, 0.95]}>
-        <sphereGeometry args={[0.62, 16, 11]} />
-        <meshStandardMaterial color="#a88f75" roughness={1} />
-      </mesh>
-      {/* Strong folded hind legs make the body read as a rabbit. */}
-      <mesh position={[-0.42, -0.2, -0.22]} scale={[0.4, 0.34, 0.58]}>
-        <sphereGeometry args={[0.62, 14, 9]} />
-        <meshStandardMaterial color="#9c836b" roughness={1} />
-      </mesh>
-      <mesh position={[0.42, -0.2, -0.22]} scale={[0.4, 0.34, 0.58]}>
-        <sphereGeometry args={[0.62, 14, 9]} />
-        <meshStandardMaterial color="#9c836b" roughness={1} />
-      </mesh>
-      {/* A white puff at the back becomes the rabbit's cotton tail. */}
-      <mesh position={[0, 0.04, -0.72]}>
-        <sphereGeometry args={[0.24, 12, 8]} />
-        <meshStandardMaterial color="#e8dfd1" roughness={1} />
-      </mesh>
-      {/* Group the face and ears so the whole head can dip to nibble. */}
-      <group ref={head} position={[0, 0.28, 0.58]} rotation={[0.12, 0, 0]}>
-        {/* A small rounded head sits above the shoulders. */}
-        <mesh scale={[0.82, 0.82, 0.92]}>
-          <sphereGeometry args={[0.43, 16, 10]} />
-          <meshStandardMaterial color="#ad947b" roughness={1} />
-        </mesh>
-        {/* Tall flattened ears rise from the top of the head. */}
-        <mesh
-          ref={leftEar}
-          position={[-0.18, 0.57, -0.02]}
-          rotation={[0.08, 0, 0.08]}
-          scale={[0.19, 0.62, 0.13]}
-        >
-          <sphereGeometry args={[0.7, 12, 8]} />
-          <meshStandardMaterial color="#9d846e" roughness={1} />
-        </mesh>
-        <mesh
-          ref={rightEar}
-          position={[0.18, 0.57, -0.02]}
-          rotation={[-0.04, 0, -0.08]}
-          scale={[0.19, 0.62, 0.13]}
-        >
-          <sphereGeometry args={[0.7, 12, 8]} />
-          <meshStandardMaterial color="#9d846e" roughness={1} />
-        </mesh>
-        {/* Dark glossy eyes sit on the forward-facing side. */}
-        <mesh position={[-0.22, 0.09, 0.36]}>
-          <sphereGeometry args={[0.065, 10, 7]} />
-          <meshStandardMaterial color="#171614" roughness={0.25} />
-        </mesh>
-        <mesh position={[0.22, 0.09, 0.36]}>
-          <sphereGeometry args={[0.065, 10, 7]} />
-          <meshStandardMaterial color="#171614" roughness={0.25} />
-        </mesh>
-        {/* A pale muzzle and pink nose complete the rabbit's face. */}
-        <mesh position={[0, -0.08, 0.41]} scale={[0.38, 0.23, 0.18]}>
-          <sphereGeometry args={[0.7, 12, 8]} />
-          <meshStandardMaterial color="#d3c1ae" roughness={1} />
-        </mesh>
-        <mesh position={[0, -0.02, 0.55]} scale={[1.1, 0.8, 0.75]}>
-          <sphereGeometry args={[0.07, 10, 7]} />
-          <meshStandardMaterial color="#9c6867" roughness={0.7} />
-        </mesh>
-      </group>
-      {/* Two narrow forepaws touch the grass beneath the chest. */}
-      <mesh position={[-0.2, -0.37, 0.35]} scale={[0.16, 0.16, 0.42]}>
-        <sphereGeometry args={[0.65, 10, 7]} />
-        <meshStandardMaterial color="#9c836b" roughness={1} />
-      </mesh>
-      <mesh position={[0.2, -0.37, 0.35]} scale={[0.16, 0.16, 0.42]}>
-        <sphereGeometry args={[0.65, 10, 7]} />
-        <meshStandardMaterial color="#9c836b" roughness={1} />
-      </mesh>
+      <RabbitModel rig={rig} />
     </group>
   );
 }

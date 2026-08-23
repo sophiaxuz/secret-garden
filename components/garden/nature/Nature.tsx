@@ -2,9 +2,9 @@
 import { useEffect, useState } from "react";
 // Group the garden's moving animal life behind one small scene interface.
 import { Butterfly } from "./Butterfly";
-import { Cat } from "./Cat";
-import { Dog } from "./Dog";
-import { Rabbit } from "./Rabbit";
+import { Cat } from "./cat/Cat";
+import { Dog } from "./dog/Dog";
+import { Rabbit } from "./rabbit/Rabbit";
 import { Robin } from "./Robin";
 import { Squirrel } from "./Squirrel";
 
