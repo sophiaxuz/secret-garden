@@ -6,6 +6,8 @@ import { Grass } from "./Grass";
 import { INITIAL_FLOWERS } from "./garden-flowers";
 // Shared dimensions keep ground, path, grass, and camera limits aligned.
 import { GARDEN_LAYOUT } from "./garden-layout";
+// Tree placement and inspectable identities live together in one data module.
+import { GARDEN_TREES } from "./garden-trees";
 import { Tree } from "./Tree";
 // Nature groups the butterflies, robin, and squirrel in one scene module.
 import { Nature } from "./nature/Nature";
@@ -29,12 +31,12 @@ function getPlantedFlowerPosition(index: number): [number, number, number] {
 // This module composes all physical objects that occupy the garden.
 export function GardenWorld({
   plantedCount,
-  targetedFlowerId,
+  targetedItemId,
 }: {
   // This number determines how many new memory flowers are generated.
   plantedCount: number;
-  // This id lets the targeted Flower instance render its glow.
-  targetedFlowerId: string | null;
+  // This id lets the targeted flower or tree render its glow.
+  targetedItemId: string | null;
 }) {
   // A fragment groups scene objects without creating an extra Three.js group.
   return (
@@ -69,7 +71,7 @@ export function GardenWorld({
             color={color}
             memory={memory}
             // Only the flower beneath the reticle should glow.
-            highlighted={targetedFlowerId === memory.id}
+            highlighted={targetedItemId === memory.id}
             scale={scale}
             petals={petals}
             bell={bell}
@@ -96,20 +98,24 @@ export function GardenWorld({
               name: "Unidentified memory",
               note: "Waiting to be identified, but already part of your garden.",
             }}
-            highlighted={targetedFlowerId === `memory-${index}`}
+            highlighted={targetedItemId === `memory-${index}`}
             // Small size and petal variations make each memory slightly different.
             scale={0.7 + (index % 2) * 0.15}
             petals={7 + (index % 3)}
           />
         ),
       )}
-      {/* Place a loose ring of trees around the expanded walkable area. */}
-      <Tree position={[-14, 0, 7]} scale={1.3} />
-      <Tree position={[14, 0, 4]} scale={1.6} />
-      <Tree position={[-12, 0, -7]} scale={1.55} />
-      <Tree position={[12, 0, -11]} scale={1.4} />
-      <Tree position={[-13.5, 0, -20]} scale={1.65} />
-      <Tree position={[13, 0, -21]} scale={1.5} />
+      {/* Render the named trees around the expanded walkable area. */}
+      {GARDEN_TREES.map(({ position, scale, item }) => (
+        <Tree
+          key={item.id}
+          position={position}
+          scale={scale}
+          item={item}
+          // Give the nearest targeted tree a soft canopy glow.
+          highlighted={targetedItemId === item.id}
+        />
+      ))}
       {/* Add independently animated animal life among the static plants. */}
       <Nature />
     </>

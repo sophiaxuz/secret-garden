@@ -2,10 +2,10 @@
 import { useLayoutEffect, useRef } from "react";
 // Three supplies constants that are not exposed as JSX components.
 import * as THREE from "three";
+// The generic registry lets flowers and trees share one narrow raycasting seam.
+import { useGardenInteractionRegistry } from "../interaction/GardenInteractionRegistry";
 // The memory object gives this visual flower an identity and inspectable content.
 import type { FlowerMemory } from "./flower-memory";
-// The registry receives one simple hit volume instead of every visible flower mesh.
-import { useFlowerInteractionRegistry } from "./FlowerInteractionRegistry";
 
 // These values describe one procedural flower instance.
 type FlowerProps = {
@@ -35,8 +35,8 @@ export function Flower({
   petals = 8,
   bell = false,
 }: FlowerProps) {
-  // Read the flower-only registry shared by the complete garden scene.
-  const interactionRegistry = useFlowerInteractionRegistry();
+  // Read the garden registry shared by every inspectable flower and tree.
+  const interactionRegistry = useGardenInteractionRegistry();
   // This ref exposes the one instanced mesh shared by every petal on this flower.
   const petalMesh = useRef<THREE.InstancedMesh>(null);
   // This ref exposes one cheap invisible box used only for flower raycasting.
@@ -80,7 +80,11 @@ export function Flower({
   // Grouping the pieces lets position and scale affect the entire flower.
   return (
     // `userData` is Three.js's supported place for application-specific metadata.
-    <group position={position} scale={scale} userData={{ flower: memory }}>
+    <group
+      position={position}
+      scale={scale}
+      userData={{ gardenItem: { ...memory, kind: "flower" } }}
+    >
       {/* This non-rendered box gives the raycaster one cheap target per flower. */}
       <mesh ref={interactionTarget} position={[0, 0.9, 0]} visible={false}>
         {/* The box surrounds the stem, leaves, and complete flower head. */}

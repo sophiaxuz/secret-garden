@@ -119,8 +119,8 @@ export default function Home() {
             releases
           </span>
           <span className="touch-help">
-            drag to look · hold the path button to walk · tap a flower to
-            inspect
+            drag to look · hold the path button to walk · tap a flower or tree
+            to inspect
           </span>
         </span>
       </div>
