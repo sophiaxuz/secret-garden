@@ -4,8 +4,12 @@ import { useFrame } from "@react-three/fiber";
 import { useRef } from "react";
 // Three provides the Group type used by the refs.
 import * as THREE from "three";
+// One shared target follows the squirrel without registering its many meshes.
+import { GardenInteractionTarget } from "../interaction/GardenInteractionTarget";
 // Shared habitat data keeps the squirrel's route easy to relocate with the garden.
 import { ANIMAL_HABITATS, createRoundTripRoute } from "./animal-habitats";
+// The squirrel uses the identity and highlight shared by all animals.
+import type { AnimatedAnimalProps } from "./animal-identities";
 
 // Reuse route endpoints so the animation does not allocate vectors each frame.
 const {
@@ -15,7 +19,11 @@ const {
   returnHeading: RETURN_HEADING,
 } = createRoundTripRoute(ANIMAL_HABITATS.squirrel);
 // Build a small squirrel pausing near the edge of the path.
-export function Squirrel({ animated = true }: { animated?: boolean }) {
+export function Squirrel({
+  animated = true,
+  item,
+  highlighted = false,
+}: AnimatedAnimalProps) {
   // This ref moves the whole animal in small alert motions.
   const squirrel = useRef<THREE.Group>(null);
   // This ref swishes the tail separately from the body.
@@ -143,6 +151,13 @@ export function Squirrel({ animated = true }: { animated?: boolean }) {
       rotation={[0, 0.75, 0]}
       scale={0.42}
     >
+      {/* This volume includes the squirrel's body, head, and upright tail. */}
+      <GardenInteractionTarget
+        item={item}
+        position={[0, 0.55, 0]}
+        size={[2.6, 4, 3]}
+        highlighted={highlighted}
+      />
       {/* A stretched sphere forms the body. */}
       <mesh scale={[0.72, 0.85, 1]}>
         <sphereGeometry args={[0.55, 16, 10]} />

@@ -1,11 +1,11 @@
 // Effects and refs let React operate the browser's native dialog element.
 import { useEffect, useRef } from "react";
-// The dialog renders the shared identity carried by a flower or tree.
-import type { GardenItem } from "./garden-item";
+// The dialog renders shared identity and kind-specific encounter language.
+import { GARDEN_ITEM_LANGUAGE, type GardenItem } from "./garden-item";
 
 // The parent supplies the selected garden item and decides what closing means.
 type GardenInspectionDialogProps = {
-  // This flower or tree's information is rendered inside the card.
+  // This flower, tree, or animal's information is rendered inside the card.
   item: GardenItem;
   // This callback clears the selected item in Garden.tsx.
   onClose: () => void;
@@ -41,13 +41,13 @@ export function GardenInspectionDialog({
         onClose();
       }}
     >
-      {/* Trees speak as rooted presences; flowers retain their memory language. */}
+      {/* Shared language gives each kind its own emotional frame. */}
       <p className="garden-inspection-kicker">
-        {item.kind === "tree" ? "A rooted presence" : "A living memory"}
+        {GARDEN_ITEM_LANGUAGE[item.kind].kicker}
       </p>
       {/* The id connects this visible heading to the dialog's accessible name. */}
       <h2 id="garden-inspection-title">{item.name}</h2>
-      {/* Identified flowers and trees may carry a botanical name. */}
+      {/* Identified flowers, trees, and animals may carry a scientific name. */}
       {item.latinName && <em>{item.latinName}</em>}
       {/* The note gives the encounter a personal or historical voice. */}
       <p className="garden-inspection-note">{item.note}</p>

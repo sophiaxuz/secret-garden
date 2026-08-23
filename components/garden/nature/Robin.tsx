@@ -4,8 +4,12 @@ import { useFrame } from "@react-three/fiber";
 import { useRef } from "react";
 // Three provides group types, interpolation helpers, and vectors.
 import * as THREE from "three";
+// One shared target follows the robin through hopping and flight phases.
+import { GardenInteractionTarget } from "../interaction/GardenInteractionTarget";
 // Shared habitat data keeps the robin's ground route and perch easy to relocate.
 import { ANIMAL_HABITATS, createHabitatVector } from "./animal-habitats";
+// The robin uses the same identity and highlight interface as every animal.
+import type { AnimatedAnimalProps } from "./animal-identities";
 
 // Reuse route endpoints rather than allocating new vectors every frame.
 const GROUND_START = createHabitatVector(ANIMAL_HABITATS.robin.groundStart);
@@ -30,7 +34,11 @@ function flyBetween(
 }
 
 // Build a stylized European robin with a repeating natural behavior cycle.
-export function Robin({ animated = true }: { animated?: boolean }) {
+export function Robin({
+  animated = true,
+  item,
+  highlighted = false,
+}: AnimatedAnimalProps) {
   // This group moves the complete bird through the garden.
   const robin = useRef<THREE.Group>(null);
   // The head turns independently while the robin watches its surroundings.
@@ -145,6 +153,13 @@ export function Robin({ animated = true }: { animated?: boolean }) {
       </group>
       {/* This group holds and moves every visible part of the robin. */}
       <group ref={robin} position={GROUND_START.toArray()} scale={0.34}>
+        {/* This box follows both the robin's ground route and curved flights. */}
+        <GardenInteractionTarget
+          item={item}
+          position={[0, 0.1, 0]}
+          size={[2.4, 3, 2.4]}
+          highlighted={highlighted}
+        />
         {/* A rounded brown shape forms the robin's body. */}
         <mesh scale={[0.75, 1, 0.72]}>
           <sphereGeometry args={[0.55, 18, 12]} />

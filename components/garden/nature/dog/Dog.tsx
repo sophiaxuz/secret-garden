@@ -4,8 +4,12 @@ import { useFrame } from "@react-three/fiber";
 import { useRef } from "react";
 // Three provides scene types, route vectors, and damping helpers.
 import * as THREE from "three";
+// One shared target follows the dog without entering its visible model.
+import { GardenInteractionTarget } from "../../interaction/GardenInteractionTarget";
 // Shared habitat data keeps the dog's patrol easy to relocate with the garden.
 import { ANIMAL_HABITATS, createRoundTripRoute } from "../animal-habitats";
+// The dog uses the identity and highlight shared by all animals.
+import type { AnimatedAnimalProps } from "../animal-identities";
 // DogModel keeps all visible mesh geometry out of this behavior module.
 import { DogModel, type DogRig } from "./DogModel";
 
@@ -18,7 +22,11 @@ const {
 } = createRoundTripRoute(ANIMAL_HABITATS.dog);
 
 // Build a friendly garden dog that sniffs, trots, watches, and wags.
-export function Dog({ animated = true }: { animated?: boolean }) {
+export function Dog({
+  animated = true,
+  item,
+  highlighted = false,
+}: AnimatedAnimalProps) {
   // The root group controls the dog's world position and direction.
   const dog = useRef<THREE.Group>(null);
   // The head looks and sniffs independently from the body.
@@ -156,6 +164,13 @@ export function Dog({ animated = true }: { animated?: boolean }) {
       rotation={[0, OUTBOUND_HEADING, 0]}
       scale={0.58}
     >
+      {/* This volume follows the complete dog along both halves of its patrol. */}
+      <GardenInteractionTarget
+        item={item}
+        position={[0, 0.35, 0]}
+        size={[3, 3, 4]}
+        highlighted={highlighted}
+      />
       <DogModel rig={rig} />
     </group>
   );

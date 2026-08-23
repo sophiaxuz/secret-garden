@@ -4,8 +4,12 @@ import { useFrame } from "@react-three/fiber";
 import { useRef } from "react";
 // Three supplies vectors, groups, and smooth interpolation helpers.
 import * as THREE from "three";
+// One shared target follows the rabbit without entering its visible model.
+import { GardenInteractionTarget } from "../../interaction/GardenInteractionTarget";
 // Shared habitat data keeps the rabbit's route easy to relocate with the garden.
 import { ANIMAL_HABITATS, createRoundTripRoute } from "../animal-habitats";
+// The rabbit uses the identity and highlight shared by all animals.
+import type { AnimatedAnimalProps } from "../animal-identities";
 // RabbitModel keeps all visible mesh geometry out of this behavior module.
 import { RabbitModel, type RabbitRig } from "./RabbitModel";
 
@@ -18,7 +22,11 @@ const {
 } = createRoundTripRoute(ANIMAL_HABITATS.rabbit);
 
 // Build a little garden rabbit that nibbles, listens, and bounds through grass.
-export function Rabbit({ animated = true }: { animated?: boolean }) {
+export function Rabbit({
+  animated = true,
+  item,
+  highlighted = false,
+}: AnimatedAnimalProps) {
   // This group moves the complete rabbit along its route.
   const rabbit = useRef<THREE.Group>(null);
   // The head dips independently when the rabbit eats.
@@ -126,6 +134,13 @@ export function Rabbit({ animated = true }: { animated?: boolean }) {
       rotation={[0, OUTBOUND_HEADING, 0]}
       scale={0.55}
     >
+      {/* This volume includes the crouched body, raised ears, and bounding arc. */}
+      <GardenInteractionTarget
+        item={item}
+        position={[0, 0.3, 0]}
+        size={[2.5, 2.8, 3]}
+        highlighted={highlighted}
+      />
       <RabbitModel rig={rig} />
     </group>
   );

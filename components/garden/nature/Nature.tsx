@@ -9,9 +9,23 @@ import { Robin } from "./Robin";
 import { Squirrel } from "./Squirrel";
 // Every animal's world-space habitat anchors live in one shared map.
 import { ANIMAL_HABITATS } from "./animal-habitats";
+// Every rendered animal receives one stable inspectable identity from this cast.
+import {
+  ANIMAL_IDENTITIES,
+  type AnimatedAnimalProps,
+} from "./animal-identities";
+
+// Pair an identity with the targeting state derived from its own id.
+function interactionPropsFor(
+  item: AnimatedAnimalProps["item"],
+  targetedItemId: string | null,
+): Pick<AnimatedAnimalProps, "item" | "highlighted"> {
+  // Returning both values together prevents mismatched identity comparisons.
+  return { item, highlighted: targetedItemId === item.id };
+}
 
 // Add several independently animated inhabitants to the garden.
-export function Nature() {
+export function Nature({ targetedItemId }: { targetedItemId: string | null }) {
   // Start conservatively until the browser preference has been read.
   const [animated, setAnimated] = useState(false);
 
@@ -36,29 +50,56 @@ export function Nature() {
         animated={animated}
         color="#f0c95a"
         origin={ANIMAL_HABITATS.butterflies.entrance}
+        {...interactionPropsFor(
+          ANIMAL_IDENTITIES.butterflies.entrance,
+          targetedItemId,
+        )}
       />
       <Butterfly
         animated={animated}
         color="#a9c9df"
         origin={ANIMAL_HABITATS.butterflies.middle}
         phase={2.1}
+        {...interactionPropsFor(
+          ANIMAL_IDENTITIES.butterflies.middle,
+          targetedItemId,
+        )}
       />
       <Butterfly
         animated={animated}
         color="#e8a5a1"
         origin={ANIMAL_HABITATS.butterflies.deep}
         phase={4.3}
+        {...interactionPropsFor(
+          ANIMAL_IDENTITIES.butterflies.deep,
+          targetedItemId,
+        )}
       />
       {/* The robin waits near the starting path. */}
-      <Robin animated={animated} />
+      <Robin
+        animated={animated}
+        {...interactionPropsFor(ANIMAL_IDENTITIES.robin, targetedItemId)}
+      />
       {/* The squirrel stays lower and farther into the garden. */}
-      <Squirrel animated={animated} />
+      <Squirrel
+        animated={animated}
+        {...interactionPropsFor(ANIMAL_IDENTITIES.squirrel, targetedItemId)}
+      />
       {/* The rabbit forages among the flowers on the sunny side. */}
-      <Rabbit animated={animated} />
+      <Rabbit
+        animated={animated}
+        {...interactionPropsFor(ANIMAL_IDENTITIES.rabbit, targetedItemId)}
+      />
       {/* The dog follows a friendly patrol near the front of the garden. */}
-      <Dog animated={animated} />
+      <Dog
+        animated={animated}
+        {...interactionPropsFor(ANIMAL_IDENTITIES.dog, targetedItemId)}
+      />
       {/* The cat quietly watches the deeper, shaded side of the garden. */}
-      <Cat animated={animated} />
+      <Cat
+        animated={animated}
+        {...interactionPropsFor(ANIMAL_IDENTITIES.cat, targetedItemId)}
+      />
     </>
   );
 }

@@ -15,12 +15,15 @@ import { GardenWorld } from "./garden/GardenWorld";
 import { GARDEN_LAYOUT } from "./garden/garden-layout";
 // This module casts the center-screen ray and reports garden-life interactions.
 import { GardenInteraction } from "./garden/interaction/GardenInteraction";
-// This native dialog presents a selected flower or tree with correct focus behavior.
+// This native dialog presents selected garden life with correct focus behavior.
 import { GardenInspectionDialog } from "./garden/interaction/GardenInspectionDialog";
-// This provider limits raycasting to registered flower and tree hit volumes.
+// This provider limits raycasting to registered garden-life hit volumes.
 import { GardenInteractionRegistryProvider } from "./garden/interaction/GardenInteractionRegistry";
 // The UI and 3D objects share one inspectable garden identity.
-import type { GardenItem } from "./garden/interaction/garden-item";
+import {
+  GARDEN_ITEM_LANGUAGE,
+  type GardenItem,
+} from "./garden/interaction/garden-item";
 // This browser-audio module provides birds and moving leaves after entry.
 import { NatureSoundscape } from "./garden/nature/NatureSoundscape";
 
@@ -34,7 +37,7 @@ type GardenProps = {
 
 // This is the public interface for the entire 3D garden module.
 export default function Garden({ plantedCount, entered }: GardenProps) {
-  // Track the flower or tree currently beneath the center-screen reticle.
+  // Track the flower, tree, or animal beneath the center-screen reticle.
   const [targetedItem, setTargetedItem] = useState<GardenItem | null>(null);
   // Track the garden item whose full inspection card is open.
   const [selectedItem, setSelectedItem] = useState<GardenItem | null>(null);
@@ -94,7 +97,7 @@ export default function Garden({ plantedCount, entered }: GardenProps) {
         />
         {/* Share one narrow interaction registry between life and raycaster. */}
         <GardenInteractionRegistryProvider>
-          {/* Pass the target id down so the matching flower or tree can glow. */}
+          {/* Pass the target id down so the matching garden life can glow. */}
           <GardenWorld
             plantedCount={plantedCount}
             targetedItemId={targetedItem?.id ?? null}
@@ -119,15 +122,11 @@ export default function Garden({ plantedCount, entered }: GardenProps) {
       {targetedItem && !selectedItem && (
         <div className="garden-prompt">
           <strong>{targetedItem.name}</strong>
-          <span>
-            {targetedItem.kind === "tree"
-              ? "press E or click to listen"
-              : "press E or click to remember"}
-          </span>
+          <span>{GARDEN_ITEM_LANGUAGE[targetedItem.kind].prompt}</span>
         </div>
       )}
 
-      {/* Render the selected flower or tree in a native modal dialog. */}
+      {/* Render the selected garden life in a native modal dialog. */}
       {selectedItem && (
         <GardenInspectionDialog
           item={selectedItem}

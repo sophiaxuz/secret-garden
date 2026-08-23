@@ -8,14 +8,14 @@ import * as THREE from "three";
 import { findGardenItem } from "./find-garden-item";
 // The registry exposes only inexpensive inspectable hit volumes to the raycaster.
 import { useGardenInteractionRegistry } from "./GardenInteractionRegistry";
-// Flowers and trees cross this interaction seam with the same small data shape.
+// All inspectable garden life crosses this seam with the same small data shape.
 import type { GardenItem } from "./garden-item";
 
 // These callbacks report targeting results without coupling behavior to HTML UI.
 type GardenInteractionProps = {
   // Disable targeting before entry or while an inspection card is open.
   active: boolean;
-  // Report the flower or tree beneath the desktop reticle.
+  // Report the garden life beneath the desktop reticle.
   onTargetChange: (item: GardenItem | null) => void;
   // Report an explicit click, tap, or E-key inspection.
   onInspect: (item: GardenItem) => void;
@@ -29,7 +29,7 @@ export function GardenInteraction({
 }: GardenInteractionProps) {
   // Read the live camera and canvas from the surrounding Canvas.
   const { camera, gl } = useThree();
-  // Read the stable list of registered flower and tree hit volumes.
+  // Read the stable list of registered garden-life hit volumes.
   const interactionRegistry = useGardenInteractionRegistry();
   // Reuse one raycaster instead of allocating one every frame.
   const raycaster = useRef(new THREE.Raycaster());
@@ -79,7 +79,7 @@ export function GardenInteraction({
     if (clock.elapsedTime - lastRaycastAt.current < 0.1) return;
     // Record this scan time for the next throttle check.
     lastRaycastAt.current = clock.elapsedTime;
-    // Find the nearest registered flower or tree beneath the reticle.
+    // Find the nearest registered garden life beneath the reticle.
     const item = itemAt(screenCenter.current);
     // Avoid a React render when the target did not change.
     if (item?.id === currentTarget.current?.id) return;
