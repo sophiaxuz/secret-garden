@@ -2,11 +2,11 @@
 import * as THREE from "three";
 // Vitest supplies the test and collection assertions.
 import { expect, test } from "vitest";
-// The registry is the public seam shared by inspectable flowers and trees.
+// The registry is the public seam shared by all inspectable garden life.
 import { createGardenInteractionRegistry } from "./GardenInteractionRegistry";
 
 // Protect mixed registration and cleanup without inspecting registry internals.
-test("the registry raycasts active flower and tree targets", () => {
+test("the registry raycasts active flower, tree, and moving animal targets", () => {
   // Create one registry like the provider creates for the mounted garden.
   const registry = createGardenInteractionRegistry();
   // Represent a flower hit volume directly in front of the visitor.
@@ -25,26 +25,46 @@ test("the registry raycasts active flower and tree targets", () => {
   treeTarget.position.z = -4;
   // Update the tree transform before sending it through the public interface.
   treeTarget.updateMatrixWorld();
-  // Aim a real ray through both registered forms of garden life.
+  // Represent an animal hit volume that can change position after registration.
+  const animalTarget = new THREE.Mesh(new THREE.BoxGeometry(1.5, 1.5, 1.5));
+  // Production animal targets are also hidden while remaining raycastable.
+  animalTarget.visible = false;
+  // Place the animal farther along the same view ray initially.
+  animalTarget.position.z = -6;
+  // Publish its first world transform before the initial raycast.
+  animalTarget.updateMatrixWorld();
+  // Aim a real ray through all three registered forms of garden life.
   const raycaster = new THREE.Raycaster(
     new THREE.Vector3(0, 0, 0),
     new THREE.Vector3(0, 0, -1),
     0,
     8,
   );
-  // Register both targets and retain their independent cleanup functions.
+  // Register every target and retain their independent cleanup functions.
   const unregisterFlower = registry.register(flowerTarget);
   const unregisterTree = registry.register(treeTarget);
-  // The nearer flower and farther tree should both be returned in distance order.
+  const unregisterAnimal = registry.register(animalTarget);
+  // All subjects should be returned from nearest to farthest.
+  expect([
+    ...new Set(registry.raycast(raycaster).map((hit) => hit.object)),
+  ]).toEqual([flowerTarget, treeTarget, animalTarget]);
+  // Move the registered animal away like a live render-loop update would.
+  animalTarget.position.x = 5;
+  animalTarget.updateMatrixWorld();
+  // The registry should now miss the animal without requiring re-registration.
   expect([
     ...new Set(registry.raycast(raycaster).map((hit) => hit.object)),
   ]).toEqual([flowerTarget, treeTarget]);
-  // Removing only the flower must leave the tree independently inspectable.
+  // Move the animal back before checking independent cleanup behavior.
+  animalTarget.position.x = 0;
+  animalTarget.updateMatrixWorld();
+  // Removing only the flower must leave tree and animal independently inspectable.
   unregisterFlower();
   expect([
     ...new Set(registry.raycast(raycaster).map((hit) => hit.object)),
-  ]).toEqual([treeTarget]);
-  // Removing the tree leaves no stale scene objects in the registry.
+  ]).toEqual([treeTarget, animalTarget]);
+  // Removing both remaining targets leaves no stale scene objects behind.
   unregisterTree();
+  unregisterAnimal();
   expect(registry.raycast(raycaster)).toEqual([]);
 });

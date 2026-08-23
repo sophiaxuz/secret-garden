@@ -20,7 +20,7 @@ export function createGardenInteractionRegistry(): GardenInteractionRegistry {
     register(target) {
       // Add this object's inexpensive hit volume to the raycast-only list.
       targets.push(target);
-      // Remove that exact object when its flower or tree leaves the scene.
+      // Remove that exact object when its garden subject leaves the scene.
       return () => {
         // Locate the object at cleanup time because other registrations may change.
         const targetIndex = targets.indexOf(target);

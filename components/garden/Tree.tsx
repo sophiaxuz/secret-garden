@@ -1,9 +1,5 @@
-// Layout effects register the tree's hit volume after its scene mesh mounts.
-import { useLayoutEffect, useRef } from "react";
-// Three supplies the mesh type stored by the interaction-target ref.
-import * as THREE from "three";
-// The generic registry keeps tree interaction out of whole-scene raycasting.
-import { useGardenInteractionRegistry } from "./interaction/GardenInteractionRegistry";
+// The shared target hides tree registration, metadata, and cleanup.
+import { GardenInteractionTarget } from "./interaction/GardenInteractionTarget";
 // TreeItem prevents flower identity from crossing into this tree-only module.
 import type { TreeItem } from "./interaction/garden-item";
 
@@ -26,29 +22,15 @@ export function Tree({
   item,
   highlighted = false,
 }: TreeProps) {
-  // Read the target registry shared by the complete interactive garden.
-  const interactionRegistry = useGardenInteractionRegistry();
-  // This ref exposes one inexpensive box used only for tree raycasting.
-  const interactionTarget = useRef<THREE.Mesh>(null);
-
-  // Register the tree hit volume only while this tree exists in the scene.
-  useLayoutEffect(() => {
-    // Stop until React has connected the invisible mesh to the ref.
-    if (!interactionTarget.current) return;
-    // Return registration cleanup directly for React to call on unmount.
-    return interactionRegistry.register(interactionTarget.current);
-  }, [interactionRegistry]);
-
   // The group makes the position and scale apply to every tree part.
   return (
-    <group position={position} scale={scale} userData={{ gardenItem: item }}>
-      {/* One hidden box represents the complete tree to the raycaster cheaply. */}
-      <mesh ref={interactionTarget} position={[0, 2.8, 0]} visible={false}>
-        {/* The volume includes trunk and canopy without registering each mesh. */}
-        <boxGeometry args={[3.6, 5.8, 3.6]} />
-        {/* Mesh raycasting needs a material even though it is never rendered. */}
-        <meshBasicMaterial />
-      </mesh>
+    <group position={position} scale={scale}>
+      {/* One target encloses the complete tree without registering each mesh. */}
+      <GardenInteractionTarget
+        item={item}
+        position={[0, 2.8, 0]}
+        size={[3.6, 5.8, 3.6]}
+      />
       {/* A tapered cylinder becomes the trunk. */}
       <mesh position={[0, 2.1, 0]}>
         <cylinderGeometry args={[0.22, 0.38, 4.2, 9]} />

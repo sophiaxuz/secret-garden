@@ -9,19 +9,6 @@ import { GardenInspectionDialog } from "./GardenInspectionDialog";
 
 // Protect the complete tree-inspection card through its public React interface.
 test("an inspected tree reveals its name, species, and story", async () => {
-  // JSDOM omits native dialog methods that real browsers provide.
-  HTMLDialogElement.prototype.showModal = vi.fn(function showModal(
-    this: HTMLDialogElement,
-  ) {
-    // Reproduce the open state that makes native dialog content accessible.
-    this.setAttribute("open", "");
-  });
-  HTMLDialogElement.prototype.close = vi.fn(function close(
-    this: HTMLDialogElement,
-  ) {
-    // Reproduce native cleanup so unmount behavior matches a browser closely.
-    this.removeAttribute("open");
-  });
   // Create one event driver for the return-to-garden action.
   const user = userEvent.setup();
   // Observe closing without reaching into the dialog's internal state.
@@ -49,4 +36,23 @@ test("an inspected tree reveals its name, species, and story", async () => {
     screen.getByRole("button", { name: /return to the garden/i }),
   );
   expect(onClose).toHaveBeenCalledOnce();
+});
+
+// Protect the distinct language that makes an animal encounter feel companionable.
+test("an inspected animal is introduced as a garden companion", () => {
+  // Render one animal through the same public inspection-card interface.
+  render(
+    <GardenInspectionDialog
+      item={{
+        kind: "animal",
+        id: "pip-robin",
+        name: "Pip, the robin",
+        latinName: "Erithacus rubecula",
+        note: "A bright-eyed keeper of the path.",
+      }}
+      onClose={vi.fn()}
+    />,
+  );
+  // Animal encounters need their own voice rather than flower-memory language.
+  expect(screen.getByText("A garden companion")).toBeVisible();
 });

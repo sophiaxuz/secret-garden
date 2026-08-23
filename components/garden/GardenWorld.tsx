@@ -35,7 +35,7 @@ export function GardenWorld({
 }: {
   // This number determines how many new memory flowers are generated.
   plantedCount: number;
-  // This id lets the targeted flower or tree render its glow.
+  // This id lets the targeted flower, tree, or animal render its glow.
   targetedItemId: string | null;
 }) {
   // A fragment groups scene objects without creating an extra Three.js group.
@@ -116,8 +116,8 @@ export function GardenWorld({
           highlighted={targetedItemId === item.id}
         />
       ))}
-      {/* Add independently animated animal life among the static plants. */}
-      <Nature />
+      {/* Add independently animated, inspectable animal life among the plants. */}
+      <Nature targetedItemId={targetedItemId} />
     </>
   );
 }

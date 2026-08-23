@@ -4,8 +4,12 @@ import { useFrame } from "@react-three/fiber";
 import { useRef } from "react";
 // Three provides vectors and interpolation helpers for the patrol route.
 import * as THREE from "three";
+// One shared target follows the cat without entering its visible model.
+import { GardenInteractionTarget } from "../../interaction/GardenInteractionTarget";
 // Shared habitat data keeps the cat's patrol easy to relocate with the garden.
 import { ANIMAL_HABITATS, createRoundTripRoute } from "../animal-habitats";
+// The cat uses the identity and highlight shared by all animals.
+import type { AnimatedAnimalProps } from "../animal-identities";
 // CatModel keeps all visible mesh geometry out of this behavior module.
 import { CatModel, type CatRig } from "./CatModel";
 
@@ -18,7 +22,11 @@ const {
 } = createRoundTripRoute(ANIMAL_HABITATS.cat);
 
 // Build a grey tabby that watches, prowls, pauses, and returns.
-export function Cat({ animated = true }: { animated?: boolean }) {
+export function Cat({
+  animated = true,
+  item,
+  highlighted = false,
+}: AnimatedAnimalProps) {
   // The root group controls the complete cat's world transform.
   const cat = useRef<THREE.Group>(null);
   // The upper body lifts independently when the cat settles into a sit.
@@ -197,6 +205,13 @@ export function Cat({ animated = true }: { animated?: boolean }) {
       rotation={[0, OUTBOUND_HEADING, 0]}
       scale={0.5}
     >
+      {/* This volume follows the cat through watching, prowling, and sitting. */}
+      <GardenInteractionTarget
+        item={item}
+        position={[0, 0.3, 0]}
+        size={[3, 3, 4]}
+        highlighted={highlighted}
+      />
       <CatModel rig={rig} />
     </group>
   );

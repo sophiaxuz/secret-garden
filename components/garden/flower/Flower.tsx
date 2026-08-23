@@ -2,8 +2,8 @@
 import { useLayoutEffect, useRef } from "react";
 // Three supplies constants that are not exposed as JSX components.
 import * as THREE from "three";
-// The generic registry lets flowers and trees share one narrow raycasting seam.
-import { useGardenInteractionRegistry } from "../interaction/GardenInteractionRegistry";
+// The shared target hides flower registration, metadata, and cleanup.
+import { GardenInteractionTarget } from "../interaction/GardenInteractionTarget";
 // The memory object gives this visual flower an identity and inspectable content.
 import type { FlowerMemory } from "./flower-memory";
 
@@ -35,12 +35,8 @@ export function Flower({
   petals = 8,
   bell = false,
 }: FlowerProps) {
-  // Read the garden registry shared by every inspectable flower and tree.
-  const interactionRegistry = useGardenInteractionRegistry();
   // This ref exposes the one instanced mesh shared by every petal on this flower.
   const petalMesh = useRef<THREE.InstancedMesh>(null);
-  // This ref exposes one cheap invisible box used only for flower raycasting.
-  const interactionTarget = useRef<THREE.Mesh>(null);
 
   // Fill the shared petal mesh whenever this flower's petal count changes.
   useLayoutEffect(() => {
@@ -69,29 +65,15 @@ export function Flower({
     petalMesh.current.computeBoundingSphere();
   }, [petals]);
 
-  // Register this flower's simple hit volume while it exists in the scene.
-  useLayoutEffect(() => {
-    // Stop until React has attached the invisible target mesh to the ref.
-    if (!interactionTarget.current) return;
-    // Registration returns the cleanup React will call when this flower unmounts.
-    return interactionRegistry.register(interactionTarget.current);
-  }, [interactionRegistry]);
-
   // Grouping the pieces lets position and scale affect the entire flower.
   return (
-    // `userData` is Three.js's supported place for application-specific metadata.
-    <group
-      position={position}
-      scale={scale}
-      userData={{ gardenItem: { ...memory, kind: "flower" } }}
-    >
-      {/* This non-rendered box gives the raycaster one cheap target per flower. */}
-      <mesh ref={interactionTarget} position={[0, 0.9, 0]} visible={false}>
-        {/* The box surrounds the stem, leaves, and complete flower head. */}
-        <boxGeometry args={[0.9, 1.8, 0.9]} />
-        {/* A material is required for mesh raycasting but is never rendered. */}
-        <meshBasicMaterial />
-      </mesh>
+    <group position={position} scale={scale}>
+      {/* One target surrounds the stem, leaves, and complete flower head. */}
+      <GardenInteractionTarget
+        item={{ ...memory, kind: "flower" }}
+        position={[0, 0.9, 0]}
+        size={[0.9, 1.8, 0.9]}
+      />
       {/* A narrow cylinder forms the stem. */}
       <mesh position={[0, 0.7, 0]}>
         {/* The top and bottom radii differ slightly for an organic taper. */}

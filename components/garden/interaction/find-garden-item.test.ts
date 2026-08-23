@@ -5,7 +5,7 @@ import { expect, test } from "vitest";
 // This resolver should identify any inspectable life from one of its nested parts.
 import { findGardenItem } from "./find-garden-item";
 
-// Protect the shared resolver behavior for both current kinds of garden life.
+// Protect the shared resolver behavior for every current kind of garden life.
 test.each([
   {
     kind: "flower" as const,
@@ -19,8 +19,14 @@ test.each([
     name: "Threshold oak",
     note: "The first tree to greet a visitor.",
   },
+  {
+    kind: "animal" as const,
+    id: "pip-robin",
+    name: "Pip, the robin",
+    note: "A bright-eyed keeper of the path.",
+  },
 ])("a nested $kind part resolves its garden identity", (item) => {
-  // The outer group represents one complete inspectable flower or tree.
+  // The outer group represents one complete inspectable garden subject.
   const gardenLife = new THREE.Group();
   // Store identity in the same supported metadata field used by the rendered scene.
   gardenLife.userData.gardenItem = item;
@@ -28,7 +34,7 @@ test.each([
   const innerGroup = new THREE.Group();
   // A mesh represents the exact hit volume selected by raycasting.
   const hitVolume = new THREE.Mesh();
-  // Reproduce the parent chain shared by tree and flower scene modules.
+  // Reproduce the parent chain supported across scene-life modules.
   gardenLife.add(innerGroup);
   innerGroup.add(hitVolume);
   // Resolving the nested target should reveal the containing garden identity.
