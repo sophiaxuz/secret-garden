@@ -7,6 +7,8 @@ import { Dog } from "./dog/Dog";
 import { Rabbit } from "./rabbit/Rabbit";
 import { Robin } from "./Robin";
 import { Squirrel } from "./Squirrel";
+// Every animal's world-space habitat anchors live in one shared map.
+import { ANIMAL_HABITATS } from "./animal-habitats";
 
 // Add several independently animated inhabitants to the garden.
 export function Nature() {
@@ -33,18 +35,18 @@ export function Nature() {
       <Butterfly
         animated={animated}
         color="#f0c95a"
-        origin={[-4.5, 1.25, 7.5]}
+        origin={ANIMAL_HABITATS.butterflies.entrance}
       />
       <Butterfly
         animated={animated}
         color="#a9c9df"
-        origin={[5.4, 1.55, -4.5]}
+        origin={ANIMAL_HABITATS.butterflies.middle}
         phase={2.1}
       />
       <Butterfly
         animated={animated}
         color="#e8a5a1"
-        origin={[-6.5, 1.1, -13]}
+        origin={ANIMAL_HABITATS.butterflies.deep}
         phase={4.3}
       />
       {/* The robin waits near the starting path. */}

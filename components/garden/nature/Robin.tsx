@@ -4,11 +4,13 @@ import { useFrame } from "@react-three/fiber";
 import { useRef } from "react";
 // Three provides group types, interpolation helpers, and vectors.
 import * as THREE from "three";
+// Shared habitat data keeps the robin's ground route and perch easy to relocate.
+import { ANIMAL_HABITATS, createHabitatVector } from "./animal-habitats";
 
 // Reuse route endpoints rather than allocating new vectors every frame.
-const GROUND_START = new THREE.Vector3(2.8, 0.23, 8);
-const GROUND_END = new THREE.Vector3(4.1, 0.23, 6.7);
-const PERCH = new THREE.Vector3(6.2, 1.75, 4.4);
+const GROUND_START = createHabitatVector(ANIMAL_HABITATS.robin.groundStart);
+const GROUND_END = createHabitatVector(ANIMAL_HABITATS.robin.groundEnd);
+const PERCH = createHabitatVector(ANIMAL_HABITATS.robin.perch);
 
 // Copy an interpolated position and add a curved flight arc.
 function flyBetween(

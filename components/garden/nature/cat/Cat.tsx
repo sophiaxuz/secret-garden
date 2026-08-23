@@ -4,21 +4,18 @@ import { useFrame } from "@react-three/fiber";
 import { useRef } from "react";
 // Three provides vectors and interpolation helpers for the patrol route.
 import * as THREE from "three";
+// Shared habitat data keeps the cat's patrol easy to relocate with the garden.
+import { ANIMAL_HABITATS, createRoundTripRoute } from "../animal-habitats";
 // CatModel keeps all visible mesh geometry out of this behavior module.
 import { CatModel, type CatRig } from "./CatModel";
 
 // The cat patrols a shaded route deeper in the garden.
-const CAT_START = new THREE.Vector3(9.4, 0.4, -10);
-const CAT_END = new THREE.Vector3(5.8, 0.4, -16.5);
-// These headings point toward the two ends of the cat's route.
-const OUTBOUND_HEADING = Math.atan2(
-  CAT_END.x - CAT_START.x,
-  CAT_END.z - CAT_START.z,
-);
-const RETURN_HEADING = Math.atan2(
-  CAT_START.x - CAT_END.x,
-  CAT_START.z - CAT_END.z,
-);
+const {
+  start: CAT_START,
+  end: CAT_END,
+  outboundHeading: OUTBOUND_HEADING,
+  returnHeading: RETURN_HEADING,
+} = createRoundTripRoute(ANIMAL_HABITATS.cat);
 
 // Build a grey tabby that watches, prowls, pauses, and returns.
 export function Cat({ animated = true }: { animated?: boolean }) {

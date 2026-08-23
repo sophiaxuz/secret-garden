@@ -4,19 +4,16 @@ import { useFrame } from "@react-three/fiber";
 import { useRef } from "react";
 // Three provides the Group type used by the refs.
 import * as THREE from "three";
+// Shared habitat data keeps the squirrel's route easy to relocate with the garden.
+import { ANIMAL_HABITATS, createRoundTripRoute } from "./animal-habitats";
 
 // Reuse route endpoints so the animation does not allocate vectors each frame.
-const SQUIRREL_START = new THREE.Vector3(-7.2, 0.26, -4.8);
-const SQUIRREL_END = new THREE.Vector3(-11.5, 0.26, -1.2);
-// Cache the two route headings so the squirrel can prepare before each run.
-const OUTBOUND_HEADING = Math.atan2(
-  SQUIRREL_END.x - SQUIRREL_START.x,
-  SQUIRREL_END.z - SQUIRREL_START.z,
-);
-const RETURN_HEADING = Math.atan2(
-  SQUIRREL_START.x - SQUIRREL_END.x,
-  SQUIRREL_START.z - SQUIRREL_END.z,
-);
+const {
+  start: SQUIRREL_START,
+  end: SQUIRREL_END,
+  outboundHeading: OUTBOUND_HEADING,
+  returnHeading: RETURN_HEADING,
+} = createRoundTripRoute(ANIMAL_HABITATS.squirrel);
 // Build a small squirrel pausing near the edge of the path.
 export function Squirrel({ animated = true }: { animated?: boolean }) {
   // This ref moves the whole animal in small alert motions.

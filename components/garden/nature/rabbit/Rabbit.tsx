@@ -4,21 +4,18 @@ import { useFrame } from "@react-three/fiber";
 import { useRef } from "react";
 // Three supplies vectors, groups, and smooth interpolation helpers.
 import * as THREE from "three";
+// Shared habitat data keeps the rabbit's route easy to relocate with the garden.
+import { ANIMAL_HABITATS, createRoundTripRoute } from "../animal-habitats";
 // RabbitModel keeps all visible mesh geometry out of this behavior module.
 import { RabbitModel, type RabbitRig } from "./RabbitModel";
 
 // These reusable vectors describe the rabbit's short foraging route.
-const RABBIT_START = new THREE.Vector3(8, 0.26, 4.8);
-const RABBIT_END = new THREE.Vector3(11.2, 0.26, 8.3);
-// Each heading points the rabbit toward one end of its route.
-const OUTBOUND_HEADING = Math.atan2(
-  RABBIT_END.x - RABBIT_START.x,
-  RABBIT_END.z - RABBIT_START.z,
-);
-const RETURN_HEADING = Math.atan2(
-  RABBIT_START.x - RABBIT_END.x,
-  RABBIT_START.z - RABBIT_END.z,
-);
+const {
+  start: RABBIT_START,
+  end: RABBIT_END,
+  outboundHeading: OUTBOUND_HEADING,
+  returnHeading: RETURN_HEADING,
+} = createRoundTripRoute(ANIMAL_HABITATS.rabbit);
 
 // Build a little garden rabbit that nibbles, listens, and bounds through grass.
 export function Rabbit({ animated = true }: { animated?: boolean }) {

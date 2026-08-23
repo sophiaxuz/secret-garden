@@ -4,21 +4,18 @@ import { useFrame } from "@react-three/fiber";
 import { useRef } from "react";
 // Three provides scene types, route vectors, and damping helpers.
 import * as THREE from "three";
+// Shared habitat data keeps the dog's patrol easy to relocate with the garden.
+import { ANIMAL_HABITATS, createRoundTripRoute } from "../animal-habitats";
 // DogModel keeps all visible mesh geometry out of this behavior module.
 import { DogModel, type DogRig } from "./DogModel";
 
 // The dog follows this short route beside the path rather than roaming randomly.
-const DOG_START = new THREE.Vector3(-9.5, 0.46, 8.3);
-const DOG_END = new THREE.Vector3(-5.2, 0.46, 11);
-// Precompute the direction for each half of the walk.
-const OUTBOUND_HEADING = Math.atan2(
-  DOG_END.x - DOG_START.x,
-  DOG_END.z - DOG_START.z,
-);
-const RETURN_HEADING = Math.atan2(
-  DOG_START.x - DOG_END.x,
-  DOG_START.z - DOG_END.z,
-);
+const {
+  start: DOG_START,
+  end: DOG_END,
+  outboundHeading: OUTBOUND_HEADING,
+  returnHeading: RETURN_HEADING,
+} = createRoundTripRoute(ANIMAL_HABITATS.dog);
 
 // Build a friendly garden dog that sniffs, trots, watches, and wags.
 export function Dog({ animated = true }: { animated?: boolean }) {
