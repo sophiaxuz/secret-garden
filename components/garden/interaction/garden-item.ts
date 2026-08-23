@@ -3,8 +3,6 @@ export type GardenItemKind = "flower" | "tree";
 
 // These descriptive fields are shared by identified garden life and flower memory data.
 export type GardenItemDetails = {
-// These descriptive fields are shared by identified garden life and flower memory data.
-export type GardenItemDetails = {
   // Id uniquely identifies one inspectable object across the complete garden.
   id: string;
   // Name is the friendly species or landmark name shown to the visitor.
