@@ -1,12 +1,12 @@
-// Drei draws many soft cloud particles through one efficient instanced mesh.
-import { CloudInstance, Clouds } from "@react-three/drei";
-// React references expose each cloud bank's Three.js group to the frame loop.
-import { useRef } from "react";
+// React memoizes cloud geometry and releases its GPU buffers after use.
+import { useEffect, useMemo, useRef } from "react";
 // The frame hook advances cloud motion independently from React renders.
 import { useFrame } from "@react-three/fiber";
-// Three.js supplies the concrete group type stored by the reference.
+// Three.js supplies the concrete group type stored by the movement reference.
 import type { Group } from "three";
-// The pure helper wraps drifting banks invisibly beyond the garden horizon.
+// The geometry factory makes opaque volume instead of fragile alpha billboards.
+import { createCloudBankGeometry } from "./cloud-geometry";
+// The pure layout and drift helper remain independent from React and rendering.
 import {
   advanceCloudPosition,
   CLOUD_BANKS,
@@ -14,9 +14,6 @@ import {
 } from "./garden-clouds";
 // The current light phase lets clouds inherit daytime, twilight, or moonlight color.
 import type { GardenLightPhase } from "./uk-garden-time";
-
-// This local radial texture gives every cloud particle a feathered edge offline.
-const SOFT_CLOUD_TEXTURE = "/cloud-soft.svg";
 
 // Describe the changing atmosphere needed by the full cloud field.
 type GardenCloudsProps = {
@@ -28,16 +25,27 @@ type GardenCloudsProps = {
 type MovingCloudBankProps = {
   // Description contains its deterministic layout and motion settings.
   bank: CloudBankDescription;
-  // Color carries the current celestial light into the soft cloud material.
+  // Color carries the current celestial light into the shaded cloud material.
   color: string;
-  // Opacity keeps blue sky visible between formations.
-  opacity: number;
+  // A faint glow keeps moonlit and backlit cloud silhouettes legible.
+  glowIntensity: number;
 };
 
-// Move one cloud bank continuously and wrap it beyond the visible horizon.
-function MovingCloudBank({ bank, color, opacity }: MovingCloudBankProps) {
+// Move one opaque cloud bank continuously and wrap it beyond the visible horizon.
+function MovingCloudBank({ bank, color, glowIntensity }: MovingCloudBankProps) {
   // The group reference gives the animation loop one mutable x position.
   const cloudRef = useRef<Group>(null);
+  // Build one merged cloud mesh for this stable bank description.
+  const geometry = useMemo(
+    () => createCloudBankGeometry(bank.bounds, bank.seed),
+    [bank.bounds, bank.seed],
+  );
+
+  // Release manually constructed geometry if this cloud bank leaves the scene.
+  useEffect(() => {
+    // Disposal frees the merged vertex buffers from the visitor's GPU.
+    return () => geometry.dispose();
+  }, [geometry]);
 
   // Update motion on rendered frames without re-rendering React every frame.
   useFrame((_state, delta) => {
@@ -52,56 +60,56 @@ function MovingCloudBank({ bank, color, opacity }: MovingCloudBankProps) {
     );
   });
 
-  // CloudInstance adds soft billboards to the parent's shared instanced mesh.
+  // One merged mesh renders all eight lobes in this complete cloud bank.
   return (
-    <CloudInstance
+    <group
       ref={cloudRef}
       position={bank.position}
+      rotation={[0, bank.seed * 0.09, 0]}
       scale={bank.scale}
-      seed={bank.seed}
-      segments={14}
-      bounds={bank.bounds}
-      volume={5.5}
-      smallestVolume={0.2}
-      growth={3.2}
-      speed={0.06}
-      fade={18}
-      opacity={opacity}
-      color={color}
-    />
+    >
+      {/* Opaque geometry cannot silently disappear through texture-alpha failure. */}
+      <mesh geometry={geometry} frustumCulled={false}>
+        {/* Vertex shades give the rounded cloud a visible grey underside. */}
+        <meshStandardMaterial
+          color={color}
+          vertexColors
+          roughness={1}
+          metalness={0}
+          emissive={color}
+          emissiveIntensity={glowIntensity}
+        />
+      </mesh>
+    </group>
   );
 }
 
-// Render all cloud banks with colors drawn from the garden's real-time phase.
+// Render all opaque cloud banks with colors drawn from the real-time light phase.
 export function GardenClouds({ phase }: GardenCloudsProps) {
   // Day clouds are creamy white, while twilight and night borrow the sky palette.
   const cloudColor =
     phase === "day"
-      ? "#fff8e7"
+      ? "#f6f3e8"
       : phase === "night"
-        ? "#7888a2"
+        ? "#78869f"
         : phase === "dawn"
-          ? "#e9c3b5"
-          : "#dfaaa5";
-  // Slightly clearer night banks avoid masking the Moon and starscape-like sky.
-  const cloudOpacity = phase === "night" ? 0.42 : 0.62;
+          ? "#e8c5b7"
+          : "#dda9a5";
+  // Night receives a little more self-light because moonlight is deliberately subtle.
+  const glowIntensity = phase === "night" ? 0.16 : 0.07;
 
-  // One Clouds parent batches every puff into a single draw call.
+  // Stable descriptions preserve each cloud's form as the UK clock updates.
   return (
-    <Clouds
-      texture={SOFT_CLOUD_TEXTURE}
-      limit={CLOUD_BANKS.length * 14}
-      frustumCulled={false}
-    >
-      {/* Stable descriptions preserve each bank's form as time updates. */}
+    <>
+      {/* Five meshes replace one unreliable transparent billboard batch. */}
       {CLOUD_BANKS.map((bank) => (
         <MovingCloudBank
           key={bank.id}
           bank={bank}
           color={cloudColor}
-          opacity={cloudOpacity}
+          glowIntensity={glowIntensity}
         />
       ))}
-    </Clouds>
+    </>
   );
 }
