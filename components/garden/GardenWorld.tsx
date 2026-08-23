@@ -1,16 +1,16 @@
 // Flower and Tree hide the geometry details behind small reusable interfaces.
-import { Flower } from "./flower/Flower";
+import { Flower } from "./flora/Flower";
 // Grass hides hundreds of repeated blades behind one instanced-mesh interface.
-import { Grass } from "./Grass";
+import { Grass } from "./terrain/Grass";
 // Initial flower data lives separately from the scene's rendering logic.
-import { INITIAL_FLOWERS } from "./garden-flowers";
+import { INITIAL_FLOWERS } from "./flora/garden-flowers";
 // Shared dimensions keep ground, path, grass, and camera limits aligned.
 import { GARDEN_LAYOUT } from "./garden-layout";
 // Tree placement and inspectable identities live together in one data module.
-import { GARDEN_TREES } from "./garden-trees";
-import { Tree } from "./Tree";
-// Nature groups the butterflies, robin, and squirrel in one scene module.
-import { Nature } from "./nature/Nature";
+import { GARDEN_TREES } from "./flora/garden-trees";
+import { Tree } from "./flora/Tree";
+// GardenAnimals groups every moving inhabitant behind one scene interface.
+import { GardenAnimals } from "./animals/GardenAnimals";
 
 // Find a planted flower's place in several spacious plots beside the path.
 function getPlantedFlowerPosition(index: number): [number, number, number] {
@@ -117,7 +117,7 @@ export function GardenWorld({
         />
       ))}
       {/* Add independently animated, inspectable animal life among the plants. */}
-      <Nature targetedItemId={targetedItemId} />
+      <GardenAnimals targetedItemId={targetedItemId} />
     </>
   );
 }

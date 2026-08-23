@@ -8,22 +8,22 @@ import { Canvas } from "@react-three/fiber";
 // React state connects fast 3D targeting to the slower HTML information interface.
 import { useCallback, useState } from "react";
 // This module owns keyboard, mouse, and touch navigation.
-import { FirstPersonControls } from "./garden/FirstPersonControls";
+import { FirstPersonControls } from "./navigation/FirstPersonControls";
 // This module contains the physical ground, plants, and trees.
-import { GardenWorld } from "./garden/GardenWorld";
+import { GardenWorld } from "./GardenWorld";
 // Shared dimensions place the camera consistently with the larger garden.
-import { GARDEN_LAYOUT } from "./garden/garden-layout";
+import { GARDEN_LAYOUT } from "./garden-layout";
 // This module casts the center-screen ray and reports garden-life interactions.
-import { GardenInteraction } from "./garden/interaction/GardenInteraction";
+import { GardenInteraction } from "./interaction/GardenInteraction";
 // This native dialog presents selected garden life with correct focus behavior.
-import { GardenInspectionDialog } from "./garden/interaction/GardenInspectionDialog";
+import { GardenInspectionDialog } from "./interaction/GardenInspectionDialog";
 // This provider limits raycasting to registered garden-life hit volumes.
-import { GardenInteractionRegistryProvider } from "./garden/interaction/GardenInteractionRegistry";
+import { GardenInteractionRegistryProvider } from "./interaction/GardenInteractionRegistry";
 // The UI and 3D objects share one inspectable garden identity.
 import {
   GARDEN_ITEM_LANGUAGE,
   type GardenItem,
-} from "./garden/interaction/garden-item";
+} from "./interaction/garden-item";
 
 // These are the only facts a caller needs in order to render the garden.
 type GardenProps = {

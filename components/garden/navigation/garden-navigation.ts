@@ -1,7 +1,7 @@
 // Shared garden dimensions are the single source of truth for walkable limits.
-import { GARDEN_LAYOUT } from "./garden-layout";
+import { GARDEN_LAYOUT } from "../garden-layout";
 // Tree placement and visible trunk size define the static environmental obstacles.
-import { GARDEN_TREES, TREE_TRUNK_RADIUS } from "./garden-trees";
+import { GARDEN_TREES, TREE_TRUNK_RADIUS } from "../flora/garden-trees";
 
 // This radius gives the first-person camera a body instead of treating it as a point.
 const VISITOR_RADIUS = 0.34;

@@ -1,5 +1,5 @@
 // The tree-specific interaction shape gives each tree a name and inspectable story.
-import type { TreeItem } from "./interaction/garden-item";
+import type { TreeItem } from "../interaction/garden-item";
 
 // Every tree uses this unscaled trunk radius in both rendering and navigation.
 export const TREE_TRUNK_RADIUS = 0.38;

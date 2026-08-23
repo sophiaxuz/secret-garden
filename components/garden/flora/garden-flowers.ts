@@ -1,5 +1,5 @@
 // The memory type describes the information shown when a flower is inspected.
-import type { FlowerMemory } from "./flower/flower-memory";
+import type { FlowerMemory } from "./flower-memory";
 
 // Named fields make each initial flower easier to understand and rearrange.
 type GardenFlower = {

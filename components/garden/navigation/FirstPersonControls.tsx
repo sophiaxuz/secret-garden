@@ -7,7 +7,7 @@ import { useEffect, useRef, useState } from "react";
 // Three provides vectors, math helpers, and camera types used for movement.
 import * as THREE from "three";
 // Shared dimensions keep camera movement inside the rendered garden.
-import { GARDEN_LAYOUT } from "./garden-layout";
+import { GARDEN_LAYOUT } from "../garden-layout";
 // This navigation rule owns the promise that visitors cannot leave the habitat.
 import { keepVisitorInsideGarden } from "./garden-navigation";
 

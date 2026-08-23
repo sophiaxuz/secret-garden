@@ -1,7 +1,7 @@
 // The shared target hides tree registration, metadata, and cleanup.
-import { GardenInteractionTarget } from "./interaction/GardenInteractionTarget";
+import { GardenInteractionTarget } from "../interaction/GardenInteractionTarget";
 // TreeItem prevents flower identity from crossing into this tree-only module.
-import type { TreeItem } from "./interaction/garden-item";
+import type { TreeItem } from "../interaction/garden-item";
 // The shared trunk radius keeps visible bark aligned with physical collision.
 import { TREE_TRUNK_RADIUS } from "./garden-trees";
 

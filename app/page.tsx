@@ -6,17 +6,19 @@ import dynamic from "next/dynamic";
 // These React tools provide event types, side effects, references, and state.
 import { ChangeEvent, useEffect, useRef, useState } from "react";
 // The initial tally is derived from the same flower data rendered in the scene.
-import { INITIAL_FLOWER_COUNT } from "@/components/garden/garden-flowers";
+import { INITIAL_FLOWER_COUNT } from "@/components/garden/flora/garden-flowers";
 // The page uses the same planting capacity as the rendered garden plots.
 import { GARDEN_LAYOUT } from "@/components/garden/garden-layout";
 // The page owns audio so the threshold click can satisfy browser autoplay rules.
 import {
   NatureSoundscape,
   type NatureSoundscapeHandle,
-} from "@/components/garden/nature/NatureSoundscape";
+} from "@/components/garden/audio/NatureSoundscape";
 
 // Three.js needs browser APIs, so server-side rendering is disabled here.
-const Garden = dynamic(() => import("@/components/Garden"), { ssr: false });
+const Garden = dynamic(() => import("@/components/garden/Garden"), {
+  ssr: false,
+});
 
 // `Home` is the component Next.js renders for the `/` route.
 export default function Home() {

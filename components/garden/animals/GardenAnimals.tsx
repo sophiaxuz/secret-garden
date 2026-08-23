@@ -25,7 +25,12 @@ function interactionPropsFor(
 }
 
 // Add several independently animated inhabitants to the garden.
-export function Nature({ targetedItemId }: { targetedItemId: string | null }) {
+export function GardenAnimals({
+  targetedItemId,
+}: {
+  // The matching inhabitant glows when the visitor aims at its hit volume.
+  targetedItemId: string | null;
+}) {
   // Start conservatively until the browser preference has been read.
   const [animated, setAnimated] = useState(false);
 

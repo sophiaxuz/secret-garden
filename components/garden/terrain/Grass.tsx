@@ -3,7 +3,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
 // Three supplies the reusable transform and color objects for instancing.
 import * as THREE from "three";
 // Shared dimensions keep every tuft inside the habitat and away from the path.
-import { GARDEN_LAYOUT } from "./garden-layout";
+import { GARDEN_LAYOUT } from "../garden-layout";
 // This factory creates seven fine ribbon blades behind one reusable geometry.
 import { createGrassTuftGeometry } from "./grass-geometry";
 
