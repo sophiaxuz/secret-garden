@@ -50,7 +50,7 @@ export function Nature({ targetedItemId }: { targetedItemId: string | null }) {
         animated={animated}
         color="#f0c95a"
         origin={ANIMAL_HABITATS.butterflies.entrance}
-{...interactionPropsFor(
+        {...interactionPropsFor(
           ANIMAL_IDENTITIES.butterflies.entrance,
           targetedItemId,
         )}
@@ -60,7 +60,7 @@ export function Nature({ targetedItemId }: { targetedItemId: string | null }) {
         color="#a9c9df"
         origin={ANIMAL_HABITATS.butterflies.middle}
         phase={2.1}
-{...interactionPropsFor(
+        {...interactionPropsFor(
           ANIMAL_IDENTITIES.butterflies.middle,
           targetedItemId,
         )}
@@ -70,7 +70,7 @@ export function Nature({ targetedItemId }: { targetedItemId: string | null }) {
         color="#e8a5a1"
         origin={ANIMAL_HABITATS.butterflies.deep}
         phase={4.3}
-{...interactionPropsFor(
+        {...interactionPropsFor(
           ANIMAL_IDENTITIES.butterflies.deep,
           targetedItemId,
         )}
@@ -78,27 +78,27 @@ export function Nature({ targetedItemId }: { targetedItemId: string | null }) {
       {/* The robin waits near the starting path. */}
       <Robin
         animated={animated}
-{...interactionPropsFor(ANIMAL_IDENTITIES.robin, targetedItemId)}
+        {...interactionPropsFor(ANIMAL_IDENTITIES.robin, targetedItemId)}
       />
       {/* The squirrel stays lower and farther into the garden. */}
       <Squirrel
         animated={animated}
-{...interactionPropsFor(ANIMAL_IDENTITIES.squirrel, targetedItemId)}
+        {...interactionPropsFor(ANIMAL_IDENTITIES.squirrel, targetedItemId)}
       />
       {/* The rabbit forages among the flowers on the sunny side. */}
       <Rabbit
         animated={animated}
-{...interactionPropsFor(ANIMAL_IDENTITIES.rabbit, targetedItemId)}
+        {...interactionPropsFor(ANIMAL_IDENTITIES.rabbit, targetedItemId)}
       />
       {/* The dog follows a friendly patrol near the front of the garden. */}
       <Dog
         animated={animated}
-{...interactionPropsFor(ANIMAL_IDENTITIES.dog, targetedItemId)}
+        {...interactionPropsFor(ANIMAL_IDENTITIES.dog, targetedItemId)}
       />
       {/* The cat quietly watches the deeper, shaded side of the garden. */}
       <Cat
         animated={animated}
-{...interactionPropsFor(ANIMAL_IDENTITIES.cat, targetedItemId)}
+        {...interactionPropsFor(ANIMAL_IDENTITIES.cat, targetedItemId)}
       />
     </>
   );
