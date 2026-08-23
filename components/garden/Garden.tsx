@@ -9,7 +9,7 @@ import { Canvas } from "@react-three/fiber";
 import { useCallback, useState } from "react";
 // This module owns keyboard, mouse, and touch navigation.
 import { FirstPersonControls } from "./navigation/FirstPersonControls";
-// This module contains the physical ground, plants, and trees.
+// This module composes the terrain, flora, and animals in the physical world.
 import { GardenWorld } from "./GardenWorld";
 // Shared dimensions place the camera consistently with the larger garden.
 import { GARDEN_LAYOUT } from "./garden-layout";

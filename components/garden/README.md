@@ -9,10 +9,10 @@ The garden is organised by responsibility so related rendering, data, and tests 
 | `garden-layout.ts` | Dimensions shared by rendering and movement |
 | `animals/` | Animal models, animation, identities, and habitats |
 | `audio/` | The browser Web Audio soundscape |
-| `flora/` | Flowers, trees, their renderers, and placement data |
+| `flora/` | Flowers, trees, placement data, and flora composition |
 | `interaction/` | Target registration, raycasting, and inspection UI |
 | `navigation/` | First-person input, boundaries, and collision |
-| `terrain/` | Grass rendering and procedural grass geometry |
+| `terrain/` | Ground, path, grass rendering, and grass geometry |
 
 `Garden.tsx` and `GardenWorld.tsx` are composition modules. Feature implementation should remain in the responsibility folder that owns it.
 

@@ -11,7 +11,7 @@ export type AnimatedAnimalProps = {
   highlighted?: boolean;
 };
 
-// This type documents every identity required by Nature's current inhabitants.
+// This type documents every identity required by GardenAnimals' inhabitants.
 type AnimalIdentities = {
   // Three individually colored butterflies follow separate garden routes.
   readonly butterflies: {

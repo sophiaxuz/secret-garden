@@ -3,7 +3,7 @@ import type { RefObject } from "react";
 // Three supplies exact Group and Mesh types for the internal rig.
 import type * as THREE from "three";
 
-// The rig collects the dog's animated parts without exposing them to Nature.
+// The rig collects the dog's animated parts without exposing them to GardenAnimals.
 export type DogRig = {
   head: RefObject<THREE.Group>;
   tail: RefObject<THREE.Group>;
