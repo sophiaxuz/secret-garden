@@ -1,11 +1,11 @@
-// React memoizes cloud geometry and releases its GPU buffers after use.
-import { useEffect, useMemo, useRef } from "react";
+// Drei loads the two local, transparent cloud textures into Three.js.
+import { useTexture } from "@react-three/drei";
 // The frame hook advances cloud motion independently from React renders.
 import { useFrame } from "@react-three/fiber";
-// Three.js supplies the concrete group type stored by the movement reference.
-import type { Group } from "three";
-// The geometry factory makes opaque volume instead of fragile alpha billboards.
-import { createCloudBankGeometry } from "./cloud-geometry";
+// React references expose each floating sprite group to the frame loop.
+import { useEffect, useRef } from "react";
+// Three.js supplies texture color management and the group and texture types.
+import { SRGBColorSpace, type Group, type Texture } from "three";
 // The pure layout and drift helper remain independent from React and rendering.
 import {
   advanceCloudPosition,
@@ -15,101 +15,144 @@ import {
 // The current light phase lets clouds inherit daytime, twilight, or moonlight color.
 import type { GardenLightPhase } from "./uk-garden-time";
 
+// The towering sprite provides fuller cumulus silhouettes.
+const CUMULUS_TEXTURE_PATH = "/cloud-cumulus.png";
+// The wider sprite provides lighter fair-weather variation.
+const WISPY_TEXTURE_PATH = "/cloud-wispy.png";
+// The first generated image is three units wide for every two units of height.
+const CUMULUS_ASPECT_RATIO = 1.5;
+// The second generated image uses a sixteen-by-nine transparent canvas.
+const WISPY_ASPECT_RATIO = 16 / 9;
+
 // Describe the changing atmosphere needed by the full cloud field.
 type GardenCloudsProps = {
-  // Phase colors the same cloud forms without rebuilding their geometry.
+  // Phase tints the same natural textures without rebuilding the cloud layout.
   phase: GardenLightPhase;
 };
 
-// Describe the stable and atmospheric values required by one moving bank.
-type MovingCloudBankProps = {
+// Describe the texture and atmospheric values required by one moving bank.
+type FloatingCloudBankProps = {
   // Description contains its deterministic layout and motion settings.
   bank: CloudBankDescription;
-  // Color carries the current celestial light into the shaded cloud material.
-  color: string;
-  // A faint glow keeps moonlit and backlit cloud silhouettes legible.
-  glowIntensity: number;
+  // Texture supplies a natural silhouette rather than repeated geometric lobes.
+  texture: Texture;
+  // Aspect ratio preserves the generated cloud without stretching it.
+  aspectRatio: number;
+  // Tint carries the current celestial phase into the photographic sprite.
+  tint: string;
+  // Opacity softens the cloud edge while keeping its body unmistakably visible.
+  opacity: number;
 };
 
-// Move one opaque cloud bank continuously and wrap it beyond the visible horizon.
-function MovingCloudBank({ bank, color, glowIntensity }: MovingCloudBankProps) {
-  // The group reference gives the animation loop one mutable x position.
+// Move one natural cloud sprite continuously through the garden sky.
+function FloatingCloudBank({
+  bank,
+  texture,
+  aspectRatio,
+  tint,
+  opacity,
+}: FloatingCloudBankProps) {
+  // The group reference gives the frame loop mutable sky coordinates.
   const cloudRef = useRef<Group>(null);
-  // Build one merged cloud mesh for this stable bank description.
-  const geometry = useMemo(
-    () => createCloudBankGeometry(bank.bounds, bank.seed),
-    [bank.bounds, bank.seed],
-  );
+  // Width derives from each bank's existing scale and configured cloud span.
+  const width = bank.bounds[0] * bank.scale * 1.35;
+  // Height preserves the original sprite proportions instead of squashing the cloud.
+  const height = width / aspectRatio;
 
-  // Release manually constructed geometry if this cloud bank leaves the scene.
-  useEffect(() => {
-    // Disposal frees the merged vertex buffers from the visitor's GPU.
-    return () => geometry.dispose();
-  }, [geometry]);
-
-  // Update motion on rendered frames without re-rendering React every frame.
-  useFrame((_state, delta) => {
+  // Update both wind drift and a quiet vertical breathing motion each frame.
+  useFrame((state, delta) => {
     // A group can briefly be absent while the component mounts or unmounts.
     if (!cloudRef.current) return;
-    // Frame delta makes drift speed independent of the visitor's frame rate.
+    // Frame delta makes horizontal motion independent of visitor frame rate.
     const windDistance = bank.driftSpeed * delta;
-    // Wrapping outside the view creates an endless but non-reversing wind.
+    // Wrapping remains hidden well outside the garden's fog horizon.
     cloudRef.current.position.x = advanceCloudPosition(
       cloudRef.current.position.x,
       windDistance,
     );
+    // Different seed phases stop all five banks from rising and falling together.
+    const floatPhase = state.clock.elapsedTime * 0.16 + bank.seed;
+    // A small amplitude feels airborne without making the sky seasick.
+    cloudRef.current.position.y =
+      bank.position[1] + Math.sin(floatPhase) * 0.24;
   });
 
-  // One merged mesh renders all eight lobes in this complete cloud bank.
+  // A Three.js sprite always faces the camera while its parent owns world motion.
   return (
-    <group
-      ref={cloudRef}
-      position={bank.position}
-      rotation={[0, bank.seed * 0.09, 0]}
-      scale={bank.scale}
-    >
-      {/* Opaque geometry cannot silently disappear through texture-alpha failure. */}
-      <mesh geometry={geometry} frustumCulled={false}>
-        {/* Vertex shades give the rounded cloud a visible grey underside. */}
-        <meshStandardMaterial
-          color={color}
-          vertexColors
-          roughness={1}
-          metalness={0}
-          emissive={color}
-          emissiveIntensity={glowIntensity}
+    <group ref={cloudRef} position={bank.position}>
+      {/* Preserve the generated silhouette and its feathered transparent boundary. */}
+      <sprite scale={[width, height, 1]}>
+        {/* A sprite material shows the authored cloud light without geometric seams. */}
+        <spriteMaterial
+          map={texture}
+          color={tint}
+          transparent
+          opacity={opacity}
+          alphaTest={0.01}
+          depthWrite={false}
+          toneMapped={false}
+          fog
         />
-      </mesh>
+      </sprite>
     </group>
   );
 }
 
-// Render all opaque cloud banks with colors drawn from the real-time light phase.
+// Render varied, floating cloud silhouettes that follow the real-time light phase.
 export function GardenClouds({ phase }: GardenCloudsProps) {
-  // Day clouds are creamy white, while twilight and night borrow the sky palette.
-  const cloudColor =
-    phase === "day"
-      ? "#f6f3e8"
-      : phase === "night"
-        ? "#78869f"
-        : phase === "dawn"
-          ? "#e8c5b7"
-          : "#dda9a5";
-  // Night receives a little more self-light because moonlight is deliberately subtle.
-  const glowIntensity = phase === "night" ? 0.16 : 0.07;
+  // Load both local assets once and share their GPU textures across all five banks.
+  const [cumulusTexture, wispyTexture] = useTexture([
+    CUMULUS_TEXTURE_PATH,
+    WISPY_TEXTURE_PATH,
+  ]);
 
-  // Stable descriptions preserve each cloud's form as the UK clock updates.
+  // Mark authored image colors as sRGB so Three.js does not wash them out.
+  useEffect(() => {
+    // Both texture objects need the same color-space interpretation.
+    [cumulusTexture, wispyTexture].forEach((texture) => {
+      // This setting preserves the pearl whites and cool-grey underside.
+      texture.colorSpace = SRGBColorSpace;
+      // Request one GPU refresh after changing texture metadata.
+      texture.needsUpdate = true;
+    });
+  }, [cumulusTexture, wispyTexture]);
+
+  // Day stays neutral white while twilight and night borrow the sky palette.
+  const cloudTint =
+    phase === "day"
+      ? "#ffffff"
+      : phase === "night"
+        ? "#8797b5"
+        : phase === "dawn"
+          ? "#f2d4c6"
+          : "#e7bbb7";
+  // Night clouds remain gentler so they do not compete with the Moon.
+  const cloudOpacity = phase === "night" ? 0.72 : 0.92;
+
+  // Stable descriptions preserve each cloud's identity as UK time updates.
   return (
     <>
-      {/* Five meshes replace one unreliable transparent billboard batch. */}
-      {CLOUD_BANKS.map((bank) => (
-        <MovingCloudBank
-          key={bank.id}
-          bank={bank}
-          color={cloudColor}
-          glowIntensity={glowIntensity}
-        />
-      ))}
+      {/* Alternating assets prevent the skyline from repeating one silhouette. */}
+      {CLOUD_BANKS.map((bank) => {
+        // Odd seeds use the broad fair-weather cloud; even seeds use cumulus.
+        const usesWispyTexture = bank.seed % 2 !== 0;
+        // Select the corresponding image and its native proportions together.
+        const texture = usesWispyTexture ? wispyTexture : cumulusTexture;
+        const aspectRatio = usesWispyTexture
+          ? WISPY_ASPECT_RATIO
+          : CUMULUS_ASPECT_RATIO;
+        // Render this independent cloud bank with the shared phase styling.
+        return (
+          <FloatingCloudBank
+            key={bank.id}
+            bank={bank}
+            texture={texture}
+            aspectRatio={aspectRatio}
+            tint={cloudTint}
+            opacity={cloudOpacity}
+          />
+        );
+      })}
     </>
   );
 }
