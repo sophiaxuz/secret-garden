@@ -1,5 +1,7 @@
 // Flower and Tree hide the geometry details behind small reusable interfaces.
 import { Flower } from "./flower/Flower";
+// Grass hides hundreds of repeated blades behind one instanced-mesh interface.
+import { Grass } from "./Grass";
 // Initial flower data lives separately from the scene's rendering logic.
 import { INITIAL_FLOWERS } from "./garden-flowers";
 // Shared dimensions keep ground, path, grass, and camera limits aligned.
@@ -56,38 +58,8 @@ export function GardenWorld({
         />
         <meshStandardMaterial color="#70654b" roughness={1} />
       </mesh>
-      {/* Generate many deterministic grass blades without storing them by hand. */}
-      {Array.from({ length: 320 }, (_, index) => {
-        // Calculate the complete walkable width for deterministic scattering.
-        const gardenWidth =
-          GARDEN_LAYOUT.bounds.maxX - GARDEN_LAYOUT.bounds.minX;
-        // Calculate the complete walkable depth for the same reason.
-        const gardenDepth =
-          GARDEN_LAYOUT.bounds.maxZ - GARDEN_LAYOUT.bounds.minZ;
-        // Modular arithmetic scatters x positions predictably across the field.
-        const x = ((index * 2.37) % gardenWidth) + GARDEN_LAYOUT.bounds.minX;
-        // A different multiplier prevents z positions from repeating with x.
-        const z = ((index * 4.13) % gardenDepth) + GARDEN_LAYOUT.bounds.minZ;
-        // Keep the middle clear so the grass does not cover the path.
-        if (Math.abs(x) < GARDEN_LAYOUT.pathWidth / 2 + 0.35) return null;
-        // Render one narrow cone as a stylized blade of grass.
-        return (
-          <mesh
-            // The array index is stable because this generated list never reorders.
-            key={index}
-            position={[x, 0.2, z]}
-            rotation={[0, index * 0.7, ((index % 3) - 1) * 0.14]}
-          >
-            {/* Vary blade height slightly to avoid perfect repetition. */}
-            <coneGeometry args={[0.035, 0.4 + (index % 5) * 0.06, 5]} />
-            {/* Alternate greens to create depth with very simple geometry. */}
-            <meshStandardMaterial
-              color={index % 3 ? "#57724c" : "#79905c"}
-              roughness={1}
-            />
-          </mesh>
-        );
-      })}
+      {/* Render every deterministic grass blade through one GPU-instanced mesh. */}
+      <Grass />
       {/* Convert each named initial-flower object into a Flower module instance. */}
       {INITIAL_FLOWERS.map(
         ({ position, color, scale, petals, bell, memory }) => (
