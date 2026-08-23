@@ -1,3 +1,8 @@
+// These are the kinds of living garden objects a visitor can currently inspect.
+export type GardenItemKind = "flower" | "tree";
+
+// These descriptive fields are shared by identified garden life and flower memory data.
+export type GardenItemDetails = {
 // These descriptive fields are shared by identified garden life and flower memory data.
 export type GardenItemDetails = {
   // Id uniquely identifies one inspectable object across the complete garden.

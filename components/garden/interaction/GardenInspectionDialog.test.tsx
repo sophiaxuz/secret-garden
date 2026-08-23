@@ -9,6 +9,19 @@ import { GardenInspectionDialog } from "./GardenInspectionDialog";
 
 // Protect the complete tree-inspection card through its public React interface.
 test("an inspected tree reveals its name, species, and story", async () => {
+  // JSDOM omits native dialog methods that real browsers provide.
+  HTMLDialogElement.prototype.showModal = vi.fn(function showModal(
+    this: HTMLDialogElement,
+  ) {
+    // Reproduce the open state that makes native dialog content accessible.
+    this.setAttribute("open", "");
+  });
+  HTMLDialogElement.prototype.close = vi.fn(function close(
+    this: HTMLDialogElement,
+  ) {
+    // Reproduce native cleanup so unmount behavior matches a browser closely.
+    this.removeAttribute("open");
+  });
   // Create one event driver for the return-to-garden action.
   const user = userEvent.setup();
   // Observe closing without reaching into the dialog's internal state.
