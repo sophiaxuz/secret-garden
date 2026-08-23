@@ -6,6 +6,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 // Every interactive flower exposes the same small memory shape.
 import type { FlowerMemory } from "./flower-memory";
+// This tested rule resolves a flower memory from any of its nested visible parts.
+import { findFlowerMemory } from "./find-flower-memory";
 
 // These callbacks let this module report results without owning the HTML UI.
 type FlowerInteractionProps = {
@@ -16,23 +18,6 @@ type FlowerInteractionProps = {
   // Report an explicit click, tap, or E-key inspection.
   onInspect: (flower: FlowerMemory) => void;
 };
-
-// Walk from a hit mesh toward its parents until its flower group is found.
-function findFlower(object: THREE.Object3D | null): FlowerMemory | null {
-  // Start with the exact mesh intersected by the ray.
-  let current = object;
-  // Parent links eventually end at the Three.js scene.
-  while (current) {
-    // Flower.tsx stores its memory on the outer group's `userData` object.
-    const flower = current.userData.flower as FlowerMemory | undefined;
-    // Return immediately once the containing flower has been found.
-    if (flower) return flower;
-    // Otherwise continue one level upward.
-    current = current.parent;
-  }
-  // A null result means the nearest visible object was not a flower.
-  return null;
-}
 
 // Turn first-person aiming and direct touch taps into flower inspections.
 export function FlowerInteraction({
@@ -68,7 +53,7 @@ export function FlowerInteraction({
         true,
       )[0];
       // Respect occlusion: scenery in front of a flower blocks interaction.
-      return findFlower(nearest?.object ?? null);
+      return findFlowerMemory(nearest?.object ?? null);
     },
     [camera, scene],
   );

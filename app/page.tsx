@@ -133,6 +133,8 @@ export default function Home() {
       <button
         className="walk-control"
         aria-label="Walk forward"
+        // Keep the hidden movement control out of keyboard navigation before entry.
+        disabled={!entered}
         onPointerDown={() => walk("KeyW", true)}
         onPointerUp={() => walk("KeyW", false)}
         onPointerCancel={() => walk("KeyW", false)}
@@ -141,7 +143,12 @@ export default function Home() {
       </button>
 
       {/* This circular control opens the photograph picker. */}
-      <button className="plant-orb" onClick={() => inputRef.current?.click()}>
+      <button
+        className="plant-orb"
+        // A disabled control cannot be reached by keyboard before garden entry.
+        disabled={!entered}
+        onClick={() => inputRef.current?.click()}
+      >
         <b>＋</b>
         <small>
           plant

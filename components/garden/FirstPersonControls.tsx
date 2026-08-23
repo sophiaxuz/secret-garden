@@ -8,6 +8,8 @@ import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 // Shared dimensions keep camera movement inside the rendered garden.
 import { GARDEN_LAYOUT } from "./garden-layout";
+// This navigation rule owns the promise that visitors cannot leave the habitat.
+import { keepVisitorInsideGarden } from "./garden-navigation";
 
 // This module translates desktop and touch input into camera movement.
 export function FirstPersonControls({ active }: { active: boolean }) {
@@ -136,17 +138,8 @@ export function FirstPersonControls({ active }: { active: boolean }) {
       right,
       sideways * delta * GARDEN_LAYOUT.walkingSpeed,
     );
-    // Keep the visitor inside the modeled garden area.
-    camera.position.x = THREE.MathUtils.clamp(
-      camera.position.x,
-      GARDEN_LAYOUT.bounds.minX,
-      GARDEN_LAYOUT.bounds.maxX,
-    );
-    camera.position.z = THREE.MathUtils.clamp(
-      camera.position.z,
-      GARDEN_LAYOUT.bounds.minZ,
-      GARDEN_LAYOUT.bounds.maxZ,
-    );
+    // Ask the tested navigation rule to constrain the live camera without allocation.
+    keepVisitorInsideGarden(camera.position);
     // Add a tiny vertical bob so walking feels less like a floating camera.
     camera.position.y =
       GARDEN_LAYOUT.entrance.y +
