@@ -29,12 +29,18 @@ export function Butterfly({
 
   // Update position, orientation, and wing angle before every frame.
   useFrame(({ clock }) => {
-    // Keep a calm static butterfly when reduced motion is requested.
-    if (!animated) return;
-    // Add a phase offset so multiple butterflies do not move in formation.
-    const time = clock.elapsedTime + phase;
     // Stop until React has connected all refs to Three.js objects.
     if (!butterfly.current || !leftWing.current || !rightWing.current) return;
+    // Keep each butterfly calmly resting at its own origin for reduced motion.
+    if (!animated) {
+      butterfly.current.position.set(origin[0], origin[1], origin[2]);
+      butterfly.current.rotation.y = 0;
+      leftWing.current.rotation.y = 0;
+      rightWing.current.rotation.y = 0;
+      return;
+    }
+    // Add a phase offset so multiple butterflies do not move in formation.
+    const time = clock.elapsedTime + phase;
     // Drift around the origin in a loose horizontal figure-eight.
     butterfly.current.position.set(
       origin[0] + Math.sin(time * 0.45) * 1.4,
@@ -51,7 +57,7 @@ export function Butterfly({
 
   // Render the animated butterfly group.
   return (
-    <group ref={butterfly} scale={0.16}>
+    <group ref={butterfly} position={origin} scale={0.16}>
       {/* A narrow dark ellipsoid becomes the body. */}
       <mesh rotation={[Math.PI / 2, 0, 0]}>
         <sphereGeometry args={[0.18, 10, 8]} />

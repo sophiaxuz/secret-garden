@@ -6,6 +6,8 @@ import { useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useRef, useState } from "react";
 // Three provides vectors, math helpers, and camera types used for movement.
 import * as THREE from "three";
+// Shared dimensions keep camera movement inside the rendered garden.
+import { GARDEN_LAYOUT } from "./garden-layout";
 
 // This module translates desktop and touch input into camera movement.
 export function FirstPersonControls({ active }: { active: boolean }) {
@@ -125,15 +127,29 @@ export function FirstPersonControls({ active }: { active: boolean }) {
       .crossVectors(direction, camera.up)
       .normalize();
     // Move forward/backward at a frame-rate-independent speed.
-    camera.position.addScaledVector(direction, forward * delta * 2.2);
+    camera.position.addScaledVector(
+      direction,
+      forward * delta * GARDEN_LAYOUT.walkingSpeed,
+    );
     // Apply left/right movement using the right-facing vector.
-    camera.position.addScaledVector(right, sideways * delta * 2.2);
+    camera.position.addScaledVector(
+      right,
+      sideways * delta * GARDEN_LAYOUT.walkingSpeed,
+    );
     // Keep the visitor inside the modeled garden area.
-    camera.position.x = THREE.MathUtils.clamp(camera.position.x, -8, 8);
-    camera.position.z = THREE.MathUtils.clamp(camera.position.z, -10, 8);
+    camera.position.x = THREE.MathUtils.clamp(
+      camera.position.x,
+      GARDEN_LAYOUT.bounds.minX,
+      GARDEN_LAYOUT.bounds.maxX,
+    );
+    camera.position.z = THREE.MathUtils.clamp(
+      camera.position.z,
+      GARDEN_LAYOUT.bounds.minZ,
+      GARDEN_LAYOUT.bounds.maxZ,
+    );
     // Add a tiny vertical bob so walking feels less like a floating camera.
     camera.position.y =
-      1.62 +
+      GARDEN_LAYOUT.entrance.y +
       Math.sin(performance.now() * 0.004) *
         (forward || sideways ? 0.018 : 0.006);
   });

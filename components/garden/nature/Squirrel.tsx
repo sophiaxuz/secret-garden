@@ -6,8 +6,8 @@ import { useRef } from "react";
 import * as THREE from "three";
 
 // Reuse route endpoints so the animation does not allocate vectors each frame.
-const SQUIRREL_START = new THREE.Vector3(-2.9, 0.26, -1.7);
-const SQUIRREL_END = new THREE.Vector3(-5.1, 0.26, 1.45);
+const SQUIRREL_START = new THREE.Vector3(-7.2, 0.26, -4.8);
+const SQUIRREL_END = new THREE.Vector3(-11.5, 0.26, -1.2);
 // Cache the two route headings so the squirrel can prepare before each run.
 const OUTBOUND_HEADING = Math.atan2(
   SQUIRREL_END.x - SQUIRREL_START.x,
@@ -142,7 +142,7 @@ export function Squirrel({ animated = true }: { animated?: boolean }) {
   return (
     <group
       ref={squirrel}
-      position={[-2.9, 0.26, -1.7]}
+      position={SQUIRREL_START.toArray()}
       rotation={[0, 0.75, 0]}
       scale={0.42}
     >

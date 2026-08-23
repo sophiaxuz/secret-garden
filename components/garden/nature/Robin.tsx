@@ -6,9 +6,9 @@ import { useRef } from "react";
 import * as THREE from "three";
 
 // Reuse route endpoints rather than allocating new vectors every frame.
-const GROUND_START = new THREE.Vector3(1.25, 0.23, 1.5);
-const GROUND_END = new THREE.Vector3(2.2, 0.23, 0.75);
-const PERCH = new THREE.Vector3(3.45, 1.75, -1.1);
+const GROUND_START = new THREE.Vector3(2.8, 0.23, 8);
+const GROUND_END = new THREE.Vector3(4.1, 0.23, 6.7);
+const PERCH = new THREE.Vector3(6.2, 1.75, 4.4);
 
 // Copy an interpolated position and add a curved flight arc.
 function flyBetween(

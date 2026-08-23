@@ -15,6 +15,8 @@ import { FlowerMemoryDialog } from "./garden/flower/FlowerMemoryDialog";
 import { FirstPersonControls } from "./garden/FirstPersonControls";
 // This module contains the physical ground, plants, and trees.
 import { GardenWorld } from "./garden/GardenWorld";
+// Shared dimensions place the camera consistently with the larger garden.
+import { GARDEN_LAYOUT } from "./garden/garden-layout";
 // The UI and 3D objects share this description of a flower memory.
 import type { FlowerMemory } from "./garden/flower/flower-memory";
 // This browser-audio module provides birds and moving leaves after entry.
@@ -55,14 +57,21 @@ export default function Garden({ plantedCount, entered }: GardenProps) {
       <Canvas
         // This id gives PointerLockControls one explicit activation element.
         id="garden-canvas"
-        camera={{ position: [0, 1.62, 7], fov: 62 }}
+        camera={{
+          position: [
+            GARDEN_LAYOUT.entrance.x,
+            GARDEN_LAYOUT.entrance.y,
+            GARDEN_LAYOUT.entrance.z,
+          ],
+          fov: 62,
+        }}
         dpr={[1, 1.6]}
         shadows
       >
         {/* Keep a blue fallback behind the procedural sky dome. */}
         <color attach="background" args={["#8fc8e8"]} />
         {/* Fade distant objects into a pale horizon to create atmospheric depth. */}
-        <fog attach="fog" args={["#b9d8dc", 15, 38]} />
+        <fog attach="fog" args={["#b9d8dc", 24, 58]} />
         {/* Model a bright blue sky with a low, warm morning sun. */}
         <Sky
           distance={450000}

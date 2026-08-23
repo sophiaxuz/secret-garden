@@ -8,8 +8,8 @@ import * as THREE from "three";
 import { CatModel, type CatRig } from "./CatModel";
 
 // The cat patrols a shaded route deeper in the garden.
-const CAT_START = new THREE.Vector3(4.35, 0.4, -3.35);
-const CAT_END = new THREE.Vector3(2.55, 0.4, -5.65);
+const CAT_START = new THREE.Vector3(9.4, 0.4, -10);
+const CAT_END = new THREE.Vector3(5.8, 0.4, -16.5);
 // These headings point toward the two ends of the cat's route.
 const OUTBOUND_HEADING = Math.atan2(
   CAT_END.x - CAT_START.x,

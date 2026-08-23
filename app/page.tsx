@@ -5,6 +5,10 @@
 import dynamic from "next/dynamic";
 // These React tools provide event types, side effects, references, and state.
 import { ChangeEvent, useEffect, useRef, useState } from "react";
+// The initial tally is derived from the same flower data rendered in the scene.
+import { INITIAL_FLOWER_COUNT } from "@/components/garden/garden-flowers";
+// The page uses the same planting capacity as the rendered garden plots.
+import { GARDEN_LAYOUT } from "@/components/garden/garden-layout";
 
 // Three.js needs browser APIs, so server-side rendering is disabled here.
 const Garden = dynamic(() => import("@/components/Garden"), { ssr: false });
@@ -54,7 +58,9 @@ export default function Home() {
     // Simulate a future identification request with a short delay.
     window.setTimeout(() => {
       // Add one procedural flower to the scene.
-      setPlantedCount((count) => count + 1);
+      setPlantedCount((count) =>
+        Math.min(count + 1, GARDEN_LAYOUT.plantedFlowers.capacity),
+      );
       // Be explicit that this is not yet a real plant identification.
       setStatus("A new demo bloom is stirring.");
     }, 850);
@@ -144,10 +150,10 @@ export default function Home() {
       </button>
       {/* Do not create an empty toast before there is a status message. */}
       {status && <div className="garden-toast">{status}</div>}
-      {/* Combine the three initial flowers with those planted this visit. */}
+      {/* Combine the initial flowers with those planted this visit. */}
       <div className="memory-tally">
-        {/* Padding produces values such as 03 instead of 3. */}
-        {String(3 + plantedCount).padStart(2, "0")}{" "}
+        {/* Padding keeps a leading zero while the tally has one digit. */}
+        {String(INITIAL_FLOWER_COUNT + plantedCount).padStart(2, "0")}{" "}
         <small>living memories</small>
       </div>
     </main>

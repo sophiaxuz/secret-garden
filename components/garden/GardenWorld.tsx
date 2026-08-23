@@ -1,84 +1,28 @@
 // Flower and Tree hide the geometry details behind small reusable interfaces.
 import { Flower } from "./flower/Flower";
+// Initial flower data lives separately from the scene's rendering logic.
+import { INITIAL_FLOWERS } from "./garden-flowers";
+// Shared dimensions keep ground, path, grass, and camera limits aligned.
+import { GARDEN_LAYOUT } from "./garden-layout";
 import { Tree } from "./Tree";
 // Nature groups the butterflies, robin, and squirrel in one scene module.
 import { Nature } from "./nature/Nature";
 
-// Each tuple stores coordinates, appearance, and inspectable memory data.
-const FLOWERS = [
-  [
-    -2.1,
-    0,
-    4.2,
-    "#eee4cb",
-    0.85,
-    9,
-    "moon-daisy",
-    "Moon daisy",
-    "Leucanthemum vulgare",
-    "A small brightness beside the path.",
-  ],
-  [
-    2.4,
-    0,
-    3.2,
-    "#bf7e88",
-    1.05,
-    12,
-    "wild-rose",
-    "Wild rose",
-    "Rosa canina",
-    "Found opening toward the first light.",
-  ],
-  [
-    -3.1,
-    0,
-    0.8,
-    "#829cc0",
-    0.9,
-    5,
-    "bluebell",
-    "Bluebell",
-    "Hyacinthoides non-scripta",
-    "A quiet bell at the garden's edge.",
-  ],
-  [
-    3.4,
-    0,
-    -0.8,
-    "#e7c068",
-    0.72,
-    8,
-    "buttercup",
-    "Buttercup",
-    "Ranunculus acris",
-    "Holding a little piece of sunlight.",
-  ],
-  [
-    -1.8,
-    0,
-    -2.6,
-    "#d397af",
-    1.1,
-    10,
-    "cosmos",
-    "Cosmos",
-    "Cosmos bipinnatus",
-    "Remembered for the way it moved in the wind.",
-  ],
-  [
-    1.7,
-    0,
-    -4.2,
-    "#efe9dc",
-    0.9,
-    9,
-    "oxeye-daisy",
-    "Oxeye daisy",
-    "Leucanthemum vulgare",
-    "Still watching the path behind you.",
-  ],
-] as const;
+// Find a planted flower's place in several spacious plots beside the path.
+function getPlantedFlowerPosition(index: number): [number, number, number] {
+  // Two consecutive flowers share a row on opposite sides of the path.
+  const pairIndex = Math.floor(index / 2);
+  // Ten rows fill the garden from its entrance toward its deeper edge.
+  const row = pairIndex % GARDEN_LAYOUT.plantedFlowers.rows;
+  // Later flowers move into additional columns instead of leaving the bounds.
+  const column =
+    Math.floor(pairIndex / GARDEN_LAYOUT.plantedFlowers.rows) %
+    GARDEN_LAYOUT.plantedFlowers.columns;
+  // Alternate the sign to place one flower on each side of the path.
+  const side = index % GARDEN_LAYOUT.plantedFlowers.sides ? 1 : -1;
+  // Return a position that remains inside the shared walkable garden limits.
+  return [side * (3.4 + column * 2.3), 0, 8.5 - row * 3.2];
+}
 
 // This module composes all physical objects that occupy the garden.
 export function GardenWorld({
@@ -96,23 +40,36 @@ export function GardenWorld({
       {/* Rotate a large plane flat to create the garden floor. */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         {/* The plane spans beyond the fog, so visitors never see its edge. */}
-        <planeGeometry args={[40, 40, 1, 1]} />
+        <planeGeometry
+          args={[GARDEN_LAYOUT.groundWidth, GARDEN_LAYOUT.groundDepth, 1, 1]}
+        />
         {/* High roughness makes the ground diffuse rather than reflective. */}
         <meshStandardMaterial color="#3f593b" roughness={1} />
       </mesh>
       {/* A narrower plane sits slightly above the ground as a path. */}
-      <mesh position={[0, 0.012, -2]} rotation={[-Math.PI / 2, 0, 0]}>
-        <planeGeometry args={[1.8, 20]} />
+      <mesh
+        position={[0, 0.012, GARDEN_LAYOUT.pathCenterZ]}
+        rotation={[-Math.PI / 2, 0, 0]}
+      >
+        <planeGeometry
+          args={[GARDEN_LAYOUT.pathWidth, GARDEN_LAYOUT.pathLength]}
+        />
         <meshStandardMaterial color="#70654b" roughness={1} />
       </mesh>
       {/* Generate many deterministic grass blades without storing them by hand. */}
-      {Array.from({ length: 180 }, (_, index) => {
+      {Array.from({ length: 320 }, (_, index) => {
+        // Calculate the complete walkable width for deterministic scattering.
+        const gardenWidth =
+          GARDEN_LAYOUT.bounds.maxX - GARDEN_LAYOUT.bounds.minX;
+        // Calculate the complete walkable depth for the same reason.
+        const gardenDepth =
+          GARDEN_LAYOUT.bounds.maxZ - GARDEN_LAYOUT.bounds.minZ;
         // Modular arithmetic scatters x positions predictably across the field.
-        const x = ((index * 2.37) % 18) - 9;
+        const x = ((index * 2.37) % gardenWidth) + GARDEN_LAYOUT.bounds.minX;
         // A different multiplier prevents z positions from repeating with x.
-        const z = ((index * 4.13) % 20) - 10;
+        const z = ((index * 4.13) % gardenDepth) + GARDEN_LAYOUT.bounds.minZ;
         // Keep the middle clear so the grass does not cover the path.
-        if (Math.abs(x) < 1.25) return null;
+        if (Math.abs(x) < GARDEN_LAYOUT.pathWidth / 2 + 0.35) return null;
         // Render one narrow cone as a stylized blade of grass.
         return (
           <mesh
@@ -131,49 +88,56 @@ export function GardenWorld({
           </mesh>
         );
       })}
-      {/* Convert each static flower tuple into a Flower module instance. */}
-      {FLOWERS.map(
-        ([x, y, z, color, scale, petals, id, name, latinName, note], index) => (
+      {/* Convert each named initial-flower object into a Flower module instance. */}
+      {INITIAL_FLOWERS.map(
+        ({ position, color, scale, petals, bell, memory }) => (
           <Flower
-            key={index}
-            position={[x, y, z]}
+            key={memory.id}
+            position={position}
             color={color}
-            // Package the tuple's identity fields into the shared memory interface.
-            memory={{ id, name, latinName, note }}
+            memory={memory}
             // Only the flower beneath the reticle should glow.
-            highlighted={targetedFlowerId === id}
+            highlighted={targetedFlowerId === memory.id}
             scale={scale}
             petals={petals}
-            bell={index === 2}
+            bell={bell}
           />
         ),
       )}
       {/* Create additional flowers from the visitor's in-memory planting count. */}
-      {Array.from({ length: plantedCount }, (_, index) => (
-        <Flower
-          // Prefixing the key distinguishes planted flowers from initial flowers.
-          key={`new-${index}`}
-          // Alternate sides of the path and move each new flower farther ahead.
-          position={[index % 2 ? 1.7 : -1.7, 0, 5.4 - index * 1.25]}
-          // Cycle through a small warm color palette.
-          color={["#e4a85e", "#b48fb8", "#efd082"][index % 3]}
-          // Until Pl@ntNet is connected, new memories remain honestly unidentified.
-          memory={{
-            id: `memory-${index}`,
-            name: "Unidentified memory",
-            note: "Waiting to be identified, but already part of your garden.",
-          }}
-          highlighted={targetedFlowerId === `memory-${index}`}
-          // Small size and petal variations make each memory slightly different.
-          scale={0.7 + (index % 2) * 0.15}
-          petals={7 + (index % 3)}
-        />
-      ))}
-      {/* Place four differently scaled trees around the walkable area. */}
-      <Tree position={[-7, 0, -2]} scale={1.2} />
-      <Tree position={[7, 0, -5]} scale={1.45} />
-      <Tree position={[-6, 0, -10]} scale={1.5} />
-      <Tree position={[6, 0, 5]} />
+      {Array.from(
+        // Stop at the number of unique plots so flowers never repeat in one spot.
+        {
+          length: Math.min(plantedCount, GARDEN_LAYOUT.plantedFlowers.capacity),
+        },
+        (_, index) => (
+          <Flower
+            // Prefixing the key distinguishes planted flowers from initial flowers.
+            key={`new-${index}`}
+            // Plant paired rows across several plots inside the garden bounds.
+            position={getPlantedFlowerPosition(index)}
+            // Cycle through a small warm color palette.
+            color={["#e4a85e", "#b48fb8", "#efd082"][index % 3]}
+            // Until Pl@ntNet is connected, new memories remain honestly unidentified.
+            memory={{
+              id: `memory-${index}`,
+              name: "Unidentified memory",
+              note: "Waiting to be identified, but already part of your garden.",
+            }}
+            highlighted={targetedFlowerId === `memory-${index}`}
+            // Small size and petal variations make each memory slightly different.
+            scale={0.7 + (index % 2) * 0.15}
+            petals={7 + (index % 3)}
+          />
+        ),
+      )}
+      {/* Place a loose ring of trees around the expanded walkable area. */}
+      <Tree position={[-14, 0, 7]} scale={1.3} />
+      <Tree position={[14, 0, 4]} scale={1.6} />
+      <Tree position={[-12, 0, -7]} scale={1.55} />
+      <Tree position={[12, 0, -11]} scale={1.4} />
+      <Tree position={[-13.5, 0, -20]} scale={1.65} />
+      <Tree position={[13, 0, -21]} scale={1.5} />
       {/* Add independently animated animal life among the static plants. */}
       <Nature />
     </>

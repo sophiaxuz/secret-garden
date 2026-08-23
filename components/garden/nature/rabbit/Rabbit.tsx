@@ -8,8 +8,8 @@ import * as THREE from "three";
 import { RabbitModel, type RabbitRig } from "./RabbitModel";
 
 // These reusable vectors describe the rabbit's short foraging route.
-const RABBIT_START = new THREE.Vector3(4.4, 0.26, 2.35);
-const RABBIT_END = new THREE.Vector3(2.9, 0.26, 4.65);
+const RABBIT_START = new THREE.Vector3(8, 0.26, 4.8);
+const RABBIT_END = new THREE.Vector3(11.2, 0.26, 8.3);
 // Each heading points the rabbit toward one end of its route.
 const OUTBOUND_HEADING = Math.atan2(
   RABBIT_END.x - RABBIT_START.x,

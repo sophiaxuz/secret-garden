@@ -8,8 +8,8 @@ import * as THREE from "three";
 import { DogModel, type DogRig } from "./DogModel";
 
 // The dog follows this short route beside the path rather than roaming randomly.
-const DOG_START = new THREE.Vector3(-4.4, 0.46, 3.45);
-const DOG_END = new THREE.Vector3(-2.7, 0.46, 5.75);
+const DOG_START = new THREE.Vector3(-9.5, 0.46, 8.3);
+const DOG_END = new THREE.Vector3(-5.2, 0.46, 11);
 // Precompute the direction for each half of the walk.
 const OUTBOUND_HEADING = Math.atan2(
   DOG_END.x - DOG_START.x,

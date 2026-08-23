@@ -33,18 +33,18 @@ export function Nature() {
       <Butterfly
         animated={animated}
         color="#f0c95a"
-        origin={[-1.6, 1.25, 2.4]}
+        origin={[-4.5, 1.25, 7.5]}
       />
       <Butterfly
         animated={animated}
         color="#a9c9df"
-        origin={[2.2, 1.55, -0.5]}
+        origin={[5.4, 1.55, -4.5]}
         phase={2.1}
       />
       <Butterfly
         animated={animated}
         color="#e8a5a1"
-        origin={[-2.8, 1.1, -3.2]}
+        origin={[-6.5, 1.1, -13]}
         phase={4.3}
       />
       {/* The robin waits near the starting path. */}
