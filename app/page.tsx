@@ -9,6 +9,11 @@ import { ChangeEvent, useEffect, useRef, useState } from "react";
 import { INITIAL_FLOWER_COUNT } from "@/components/garden/garden-flowers";
 // The page uses the same planting capacity as the rendered garden plots.
 import { GARDEN_LAYOUT } from "@/components/garden/garden-layout";
+// The page owns audio so the threshold click can satisfy browser autoplay rules.
+import {
+  NatureSoundscape,
+  type NatureSoundscapeHandle,
+} from "@/components/garden/nature/NatureSoundscape";
 
 // Three.js needs browser APIs, so server-side rendering is disabled here.
 const Garden = dynamic(() => import("@/components/Garden"), { ssr: false });
@@ -17,6 +22,8 @@ const Garden = dynamic(() => import("@/components/Garden"), { ssr: false });
 export default function Home() {
   // This reference lets custom controls open the hidden file input.
   const inputRef = useRef<HTMLInputElement>(null);
+  // This narrow handle starts Web Audio during the visitor's entry gesture.
+  const soundscapeRef = useRef<NatureSoundscapeHandle>(null);
   // This records whether the visitor has crossed the opening threshold.
   const [entered, setEntered] = useState(false);
   // This controls how many user-created flowers exist in the scene.
@@ -43,6 +50,17 @@ export default function Home() {
     window.dispatchEvent(
       new KeyboardEvent(pressed ? "keydown" : "keyup", { code }),
     );
+  }
+
+  // Enter the world and unlock its sound from the same browser-approved click.
+  function enterGarden() {
+    try {
+      // Start audio before the event handler ends so autoplay policies accept it.
+      soundscapeRef.current?.start();
+    } finally {
+      // Audio support must never prevent the visitor from entering the garden.
+      setEntered(true);
+    }
   }
 
   // This handler runs after the visitor chooses a photograph.
@@ -81,6 +99,8 @@ export default function Home() {
       />
       {/* Render the browser-only 3D module with the current page state. */}
       <Garden plantedCount={plantedCount} entered={entered} />
+      {/* Keep audio mounted before entry so its start command is already available. */}
+      <NatureSoundscape ref={soundscapeRef} active={entered} />
       {/* These layers add edge shading and analogue-looking texture. */}
       <div className="vignette" />
       <div className="grain" />
@@ -99,8 +119,8 @@ export default function Home() {
           <br />
           only you can enter.
         </h1>
-        {/* Clicking changes state, which reveals the garden controls. */}
-        <button className="enter" onClick={() => setEntered(true)}>
+        {/* Clicking unlocks sound and reveals the garden controls together. */}
+        <button className="enter" onClick={enterGarden}>
           cross the threshold <span>→</span>
         </button>
       </section>

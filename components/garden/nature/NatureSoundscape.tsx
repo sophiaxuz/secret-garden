@@ -1,5 +1,12 @@
-// React callbacks and effects manage the browser audio graph's lifetime.
-import { useCallback, useEffect, useRef, useState } from "react";
+// React callbacks, refs, and effects manage the browser audio graph's lifetime.
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from "react";
 
 // Keep every resource needed to stop one running soundscape together.
 type SoundscapeGraph = {
@@ -13,8 +20,17 @@ type SoundscapeGraph = {
   nextChirp: number | null;
 };
 
+// The page needs one narrow command that can run inside the threshold click gesture.
+export type NatureSoundscapeHandle = {
+  // Start unlocks Web Audio without exposing graph implementation details.
+  start: () => void;
+};
+
 // The soundscape appears after entry but starts only from an explicit user gesture.
-export function NatureSoundscape({ active }: { active: boolean }) {
+export const NatureSoundscape = forwardRef<
+  NatureSoundscapeHandle,
+  { active: boolean }
+>(function NatureSoundscape({ active }, ref) {
   // This state keeps button text and accessibility state truthful.
   const [playing, setPlaying] = useState(false);
   // The ref provides synchronous access to the currently running graph.
@@ -26,14 +42,23 @@ export function NatureSoundscape({ active }: { active: boolean }) {
     const graph = graphRef.current;
     // There is nothing to stop before the visitor starts audio.
     if (!graph) return;
+    // Clear ownership first so pending callbacks cannot use a closing graph.
+    graphRef.current = null;
     // Cancel the single chirp that has not fired yet.
     if (graph.nextChirp !== null) window.clearTimeout(graph.nextChirp);
-    // Stop the looping rustle source immediately.
-    graph.rustle.stop();
-    // Closing the context releases browser audio resources.
-    void graph.context.close();
-    // Clear shared state after cleanup finishes.
-    graphRef.current = null;
+    try {
+      // Stop the looping rustle source immediately when its browser allows it.
+      graph.rustle.stop();
+    } catch {
+      // A source already stopped by the browser needs no additional recovery.
+    }
+    try {
+      // Closing the context releases browser audio resources.
+      void Promise.resolve(graph.context.close()).catch(() => undefined);
+    } catch {
+      // Older implementations may throw while closing an incomplete context.
+    }
+    // Reflect the stopped state even when browser cleanup methods fail.
     setPlaying(false);
   }, []);
 
@@ -48,97 +73,148 @@ export function NatureSoundscape({ active }: { active: boolean }) {
         .webkitAudioContext;
     // Stop gracefully in a browser without Web Audio support.
     if (!AudioContextClass) return;
-    // Creating the context here satisfies strict user-gesture autoplay policies.
-    const context = new AudioContextClass();
-    // Keep the whole environment quiet enough to sit behind exploration.
-    const master = context.createGain();
-    master.gain.value = 0.055;
-    master.connect(context.destination);
+    // Track partially created resources so synchronous browser failures can unwind.
+    let context: AudioContext | null = null;
+    let rustle: AudioBufferSourceNode | null = null;
+    try {
+      // Creating the context here satisfies strict user-gesture autoplay policies.
+      const activeContext = new AudioContextClass();
+      // Keep a nullable outer reference solely for partial-failure cleanup.
+      context = activeContext;
+      // Keep the environment gentle but clearly audible on small speakers.
+      const master = activeContext.createGain();
+      master.gain.value = 0.12;
+      master.connect(activeContext.destination);
 
-    // Fill a short buffer with random values to approximate leaves in a breeze.
-    const noiseBuffer = context.createBuffer(
-      1,
-      context.sampleRate * 2,
-      context.sampleRate,
-    );
-    const noiseData = noiseBuffer.getChannelData(0);
-    for (let index = 0; index < noiseData.length; index += 1) {
-      noiseData[index] = Math.random() * 2 - 1;
+      // Fill a short buffer with random values to approximate leaves in a breeze.
+      const noiseBuffer = activeContext.createBuffer(
+        1,
+        activeContext.sampleRate * 2,
+        activeContext.sampleRate,
+      );
+      const noiseData = noiseBuffer.getChannelData(0);
+      for (let index = 0; index < noiseData.length; index += 1) {
+        noiseData[index] = Math.random() * 2 - 1;
+      }
+      // Loop the random buffer continuously.
+      rustle = activeContext.createBufferSource();
+      rustle.buffer = noiseBuffer;
+      rustle.loop = true;
+      // Remove harsh high frequencies from the raw noise.
+      const rustleFilter = activeContext.createBiquadFilter();
+      rustleFilter.type = "lowpass";
+      rustleFilter.frequency.value = 900;
+      // Keep the rustle behind the bird calls without making it disappear.
+      const rustleGain = activeContext.createGain();
+      rustleGain.gain.value = 0.16;
+      rustle.connect(rustleFilter).connect(rustleGain).connect(master);
+      rustle.start();
+
+      // Store the graph before recursive chirp scheduling begins.
+      const graph: SoundscapeGraph = {
+        context: activeContext,
+        master,
+        rustle,
+        nextChirp: null,
+      };
+      graphRef.current = graph;
+
+      // Build one short, spatial, rising-and-falling bird phrase.
+      const chirp = () => {
+        // Stop recursion if this graph was replaced or closed.
+        if (graphRef.current !== graph) return;
+        // The fired timeout is no longer pending.
+        graph.nextChirp = null;
+        // Schedule notes against the audio clock for smooth envelopes.
+        const now = activeContext.currentTime;
+        // Place each phrase at a different horizontal position.
+        const pan = activeContext.createStereoPanner();
+        pan.pan.value = Math.random() * 1.6 - 0.8;
+        pan.connect(master);
+        // A three-note phrase sounds more organic than one electronic beep.
+        [0, 0.09, 0.21].forEach((delay, index) => {
+          // A triangle wave adds gentle harmonics while remaining soft.
+          const oscillator = activeContext.createOscillator();
+          oscillator.type = "triangle";
+          // Change pitch and contour across each phrase.
+          const baseFrequency = 1800 + Math.random() * 650 + index * 180;
+          oscillator.frequency.setValueAtTime(baseFrequency, now + delay);
+          oscillator.frequency.exponentialRampToValueAtTime(
+            baseFrequency * (index === 1 ? 0.82 : 1.3),
+            now + delay + 0.065,
+          );
+          // Shape the note with a quick attack and soft decay.
+          const envelope = activeContext.createGain();
+          envelope.gain.setValueAtTime(0.0001, now + delay);
+          envelope.gain.exponentialRampToValueAtTime(0.28, now + delay + 0.018);
+          envelope.gain.exponentialRampToValueAtTime(
+            0.0001,
+            now + delay + 0.13,
+          );
+          oscillator.connect(envelope).connect(pan);
+          oscillator.start(now + delay);
+          oscillator.stop(now + delay + 0.15);
+        });
+        // Retain only the single timeout that is still waiting to fire.
+        graph.nextChirp = window.setTimeout(chirp, 2400 + Math.random() * 4800);
+      };
+      // An immediate bird phrase confirms that the garden heard the entry gesture.
+      chirp();
+      // Resume immediately while the browser still recognizes this click gesture.
+      void Promise.resolve(activeContext.resume())
+        .then(() => {
+          // Reflect playback only if this graph still owns the soundscape.
+          if (graphRef.current === graph) setPlaying(true);
+        })
+        .catch(() => {
+          // A rejected autoplay unlock must not leave a false playing indicator.
+          if (graphRef.current === graph) stopSoundscape();
+        });
+    } catch {
+      // A fully registered graph can use the normal comprehensive cleanup path.
+      if (graphRef.current?.context === context) {
+        stopSoundscape();
+        return;
+      }
+      try {
+        // Stop a source created before the graph was ready, when one exists.
+        rustle?.stop();
+      } catch {
+        // A partially initialized source may reject stop without leaking playback.
+      }
+      try {
+        // Release a context created before the graph could take ownership.
+        if (context)
+          void Promise.resolve(context.close()).catch(() => undefined);
+      } catch {
+        // Older implementations may also throw while closing partial setup.
+      }
+      // Keep the control truthful after any synchronous setup failure.
+      setPlaying(false);
     }
-    // Loop the random buffer continuously.
-    const rustle = context.createBufferSource();
-    rustle.buffer = noiseBuffer;
-    rustle.loop = true;
-    // Remove harsh high frequencies from the raw noise.
-    const rustleFilter = context.createBiquadFilter();
-    rustleFilter.type = "lowpass";
-    rustleFilter.frequency.value = 900;
-    // Keep the rustle much quieter than the bird calls.
-    const rustleGain = context.createGain();
-    rustleGain.gain.value = 0.075;
-    rustle.connect(rustleFilter).connect(rustleGain).connect(master);
-    rustle.start();
+  }, [stopSoundscape]);
 
-    // Store the graph before recursive chirp scheduling begins.
-    const graph: SoundscapeGraph = {
-      context,
-      master,
-      rustle,
-      nextChirp: null,
-    };
-    graphRef.current = graph;
+  // Expose start to the page without exposing mutable audio nodes or React state.
+  useImperativeHandle(
+    ref,
+    () => ({
+      // Forward the threshold command to the same tested button behavior.
+      start: startSoundscape,
+    }),
+    [startSoundscape],
+  );
 
-    // Build one short, spatial, rising-and-falling bird phrase.
-    const chirp = () => {
-      // Stop recursion if this graph was replaced or closed.
-      if (graphRef.current !== graph) return;
-      // The fired timeout is no longer pending.
-      graph.nextChirp = null;
-      // Schedule notes against the audio clock for smooth envelopes.
-      const now = context.currentTime;
-      // Place each phrase at a different horizontal position.
-      const pan = context.createStereoPanner();
-      pan.pan.value = Math.random() * 1.6 - 0.8;
-      pan.connect(master);
-      // A three-note phrase sounds more organic than one electronic beep.
-      [0, 0.09, 0.21].forEach((delay, index) => {
-        // A triangle wave adds gentle harmonics while remaining soft.
-        const oscillator = context.createOscillator();
-        oscillator.type = "triangle";
-        // Change pitch and contour across each phrase.
-        const baseFrequency = 1800 + Math.random() * 650 + index * 180;
-        oscillator.frequency.setValueAtTime(baseFrequency, now + delay);
-        oscillator.frequency.exponentialRampToValueAtTime(
-          baseFrequency * (index === 1 ? 0.82 : 1.3),
-          now + delay + 0.065,
-        );
-        // Shape the note with a quick attack and soft decay.
-        const envelope = context.createGain();
-        envelope.gain.setValueAtTime(0.0001, now + delay);
-        envelope.gain.exponentialRampToValueAtTime(0.28, now + delay + 0.018);
-        envelope.gain.exponentialRampToValueAtTime(0.0001, now + delay + 0.13);
-        oscillator.connect(envelope).connect(pan);
-        oscillator.start(now + delay);
-        oscillator.stop(now + delay + 0.15);
-      });
-      // Retain only the single timeout that is still waiting to fire.
-      graph.nextChirp = window.setTimeout(chirp, 2400 + Math.random() * 4800);
-    };
-    // Leave a short breath between clicking and the first bird phrase.
-    graph.nextChirp = window.setTimeout(chirp, 500);
-    // Resume immediately while the browser still recognizes this click gesture.
-    void context.resume();
-    // Reflect the audible state in the interface.
-    setPlaying(true);
-  }, []);
-
-  // Stop sound when leaving the garden or unmounting this module.
+  // Stop sound whenever the visitor leaves the active garden state.
   useEffect(() => {
     // Entry currently only moves forward, but this keeps the interface reusable.
     if (!active) stopSoundscape();
-    // Component removal must release any playing audio.
-    return () => stopSoundscape();
   }, [active, stopSoundscape]);
+
+  // Keep unmount cleanup separate so entering does not stop newly unlocked audio.
+  useEffect(() => {
+    // Component removal must release every playing audio resource.
+    return () => stopSoundscape();
+  }, [stopSoundscape]);
 
   // Do not show an audio control before the visitor enters the garden.
   if (!active) return null;
@@ -155,4 +231,4 @@ export function NatureSoundscape({ active }: { active: boolean }) {
       {playing ? "garden sounds" : "start garden sounds"}
     </button>
   );
-}
+});

@@ -24,8 +24,6 @@ import {
   GARDEN_ITEM_LANGUAGE,
   type GardenItem,
 } from "./garden/interaction/garden-item";
-// This browser-audio module provides birds and moving leaves after entry.
-import { NatureSoundscape } from "./garden/nature/NatureSoundscape";
 
 // These are the only facts a caller needs in order to render the garden.
 type GardenProps = {
@@ -114,9 +112,6 @@ export default function Garden({ plantedCount, entered }: GardenProps) {
         {/* Enable navigation only after the threshold has been crossed. */}
         <FirstPersonControls active={entered && !selectedItem} />
       </Canvas>
-
-      {/* Start the natural audio after entry and expose its mute control. */}
-      <NatureSoundscape active={entered} />
 
       {/* Tell the visitor when the reticle is close enough to inspect garden life. */}
       {targetedItem && !selectedItem && (
