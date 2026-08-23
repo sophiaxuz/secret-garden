@@ -2,6 +2,8 @@
 import { Sky } from "@react-three/drei";
 // The lighting component consumes the pure UK time calculation as its interface.
 import type { CelestialPosition, UkGardenTime } from "./uk-garden-time";
+// GardenClouds adds slow, light-responsive movement beneath the sky dome.
+import { GardenClouds } from "./GardenClouds";
 
 // Describe the one synchronized snapshot needed by the whole atmosphere.
 type GardenLightingProps = {
@@ -75,6 +77,8 @@ export function GardenLighting({ time }: GardenLightingProps) {
         turbidity={time.phase === "day" ? 7 : 10}
         rayleigh={time.phase === "day" ? 2.2 : 1.1}
       />
+      {/* Let broad cloud banks drift through the current UK light phase. */}
+      <GardenClouds phase={time.phase} />
       {/* Ambient sky light keeps shaded surfaces legible without flattening them. */}
       <hemisphereLight
         intensity={time.hemisphereIntensity}
