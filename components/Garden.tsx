@@ -9,6 +9,8 @@ import { Canvas } from "@react-three/fiber";
 import { useCallback, useState } from "react";
 // This module casts the center-screen ray and reports flower interactions.
 import { FlowerInteraction } from "./garden/flower/FlowerInteraction";
+// This provider limits raycasting to the simple volumes registered by flowers.
+import { FlowerInteractionRegistryProvider } from "./garden/flower/FlowerInteractionRegistry";
 // This native dialog presents a selected flower with correct focus behavior.
 import { FlowerMemoryDialog } from "./garden/flower/FlowerMemoryDialog";
 // This module owns keyboard, mouse, and touch navigation.
@@ -94,21 +96,24 @@ export default function Garden({ plantedCount, entered }: GardenProps) {
           color="#ffe5ad"
           castShadow
         />
-        {/* Pass the target id down so the matching flower can glow. */}
-        <GardenWorld
-          plantedCount={plantedCount}
-          targetedFlowerId={targetedFlower?.id ?? null}
-        />
+        {/* Share one flower-only target registry between the world and raycaster. */}
+        <FlowerInteractionRegistryProvider>
+          {/* Pass the target id down so the matching flower can glow. */}
+          <GardenWorld
+            plantedCount={plantedCount}
+            targetedFlowerId={targetedFlower?.id ?? null}
+          />
+          {/* Enable flower targeting while no memory card is covering the scene. */}
+          <FlowerInteraction
+            active={entered && !selectedFlower}
+            onTargetChange={setTargetedFlower}
+            onInspect={inspectFlower}
+          />
+        </FlowerInteractionRegistryProvider>
         {/* Use Drei's forest lighting preset for natural reflections. */}
         <Environment preset="forest" />
         {/* Enable navigation only after the threshold has been crossed. */}
         <FirstPersonControls active={entered && !selectedFlower} />
-        {/* Enable flower targeting while no memory card is covering the scene. */}
-        <FlowerInteraction
-          active={entered && !selectedFlower}
-          onTargetChange={setTargetedFlower}
-          onInspect={inspectFlower}
-        />
       </Canvas>
 
       {/* Start the natural audio after entry and expose its mute control. */}

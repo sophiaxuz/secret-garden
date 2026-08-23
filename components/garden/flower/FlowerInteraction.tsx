@@ -8,6 +8,8 @@ import * as THREE from "three";
 import type { FlowerMemory } from "./flower-memory";
 // This tested rule resolves a flower memory from any of its nested visible parts.
 import { findFlowerMemory } from "./find-flower-memory";
+// The registry exposes only simple flower hit volumes to the raycaster.
+import { useFlowerInteractionRegistry } from "./FlowerInteractionRegistry";
 
 // These callbacks let this module report results without owning the HTML UI.
 type FlowerInteractionProps = {
@@ -25,8 +27,10 @@ export function FlowerInteraction({
   onTargetChange,
   onInspect,
 }: FlowerInteractionProps) {
-  // Read the live camera, scene, and canvas from the surrounding Canvas.
-  const { camera, scene, gl } = useThree();
+  // Read the live camera and canvas from the surrounding Canvas.
+  const { camera, gl } = useThree();
+  // Read the stable list containing only registered flower hit volumes.
+  const interactionRegistry = useFlowerInteractionRegistry();
   // Reuse one raycaster instead of allocating one every frame.
   const raycaster = useRef(new THREE.Raycaster());
   // `(0, 0)` is the exact center of normalized screen coordinates.
@@ -47,15 +51,12 @@ export function FlowerInteraction({
       raycaster.current.far = 4.5;
       // Build a world-space ray from the camera through the requested point.
       raycaster.current.setFromCamera(screenPosition, camera);
-      // Three returns intersections from nearest to farthest.
-      const nearest = raycaster.current.intersectObjects(
-        scene.children,
-        true,
-      )[0];
-      // Respect occlusion: scenery in front of a flower blocks interaction.
+      // Ask the registry to search only simple flower volumes, never the scene tree.
+      const nearest = interactionRegistry.raycast(raycaster.current)[0];
+      // Resolve the memory stored on the nearest target's containing flower group.
       return findFlowerMemory(nearest?.object ?? null);
     },
-    [camera, scene],
+    [camera, interactionRegistry],
   );
 
   // Detect which targeting style the current device needs.
@@ -78,7 +79,7 @@ export function FlowerInteraction({
     if (clock.elapsedTime - lastRaycastAt.current < 0.1) return;
     // Record this scan time for the next throttle check.
     lastRaycastAt.current = clock.elapsedTime;
-    // Find the nearest visible flower beneath the reticle.
+    // Find the nearest registered flower beneath the reticle.
     const flower = flowerAt(screenCenter.current);
     // Avoid a React render when the target did not change.
     if (flower?.id === currentTarget.current?.id) return;
@@ -131,7 +132,7 @@ export function FlowerInteraction({
         ((event.clientX - bounds.left) / bounds.width) * 2 - 1,
         -((event.clientY - bounds.top) / bounds.height) * 2 + 1,
       );
-      // Inspect only when the tapped visible object is a nearby flower.
+      // Inspect only when the tapped hit volume belongs to a nearby flower.
       const flower = flowerAt(point);
       if (flower) onInspect(flower);
     };
