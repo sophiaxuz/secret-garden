@@ -2,6 +2,8 @@
 import { GardenInteractionTarget } from "./interaction/GardenInteractionTarget";
 // TreeItem prevents flower identity from crossing into this tree-only module.
 import type { TreeItem } from "./interaction/garden-item";
+// The shared trunk radius keeps visible bark aligned with physical collision.
+import { TREE_TRUNK_RADIUS } from "./garden-trees";
 
 // These values let the world place and resize each tree.
 type TreeProps = {
@@ -33,7 +35,7 @@ export function Tree({
       />
       {/* A tapered cylinder becomes the trunk. */}
       <mesh position={[0, 2.1, 0]}>
-        <cylinderGeometry args={[0.22, 0.38, 4.2, 9]} />
+        <cylinderGeometry args={[0.22, TREE_TRUNK_RADIUS, 4.2, 9]} />
         <meshStandardMaterial
           color="#3a3b28"
           emissive={highlighted ? "#756f46" : "#000000"}

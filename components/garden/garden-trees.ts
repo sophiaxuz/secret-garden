@@ -1,6 +1,9 @@
 // The tree-specific interaction shape gives each tree a name and inspectable story.
 import type { TreeItem } from "./interaction/garden-item";
 
+// Every tree uses this unscaled trunk radius in both rendering and navigation.
+export const TREE_TRUNK_RADIUS = 0.38;
+
 // Named fields keep tree placement, scale, and identity together.
 type GardenTree = {
   // Position stores x, y, and z coordinates in the scene.

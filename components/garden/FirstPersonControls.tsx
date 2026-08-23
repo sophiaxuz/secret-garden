@@ -18,6 +18,8 @@ export function FirstPersonControls({ active }: { active: boolean }) {
   // Reusing vectors avoids allocating new objects during every animation frame.
   const forwardDirection = useRef(new THREE.Vector3());
   const rightDirection = useRef(new THREE.Vector3());
+  // This vector preserves the camera's safe position before each attempted move.
+  const previousPosition = useRef(new THREE.Vector3());
   // This stores the previous finger position while a touch drag is active.
   const touchStart = useRef<[number, number] | null>(null);
   // Touch devices need drag controls instead of browser pointer lock.
@@ -128,6 +130,8 @@ export function FirstPersonControls({ active }: { active: boolean }) {
     const right = rightDirection.current
       .crossVectors(direction, camera.up)
       .normalize();
+    // Remember the safe starting point for continuous environmental collision.
+    previousPosition.current.copy(camera.position);
     // Move forward/backward at a frame-rate-independent speed.
     camera.position.addScaledVector(
       direction,
@@ -138,8 +142,8 @@ export function FirstPersonControls({ active }: { active: boolean }) {
       right,
       sideways * delta * GARDEN_LAYOUT.walkingSpeed,
     );
-    // Ask the tested navigation rule to constrain the live camera without allocation.
-    keepVisitorInsideGarden(camera.position);
+    // Resolve both garden edges and tree trunks against the attempted movement.
+    keepVisitorInsideGarden(camera.position, previousPosition.current);
     // Add a tiny vertical bob so walking feels less like a floating camera.
     camera.position.y =
       GARDEN_LAYOUT.entrance.y +
