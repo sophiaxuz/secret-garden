@@ -79,3 +79,7 @@ Backend:
 3D assets:
 - GLB/glTF plant archetypes
 - Procedural variation through React Three Fiber
+
+### Code quality
+- Everytime a feature is added, think about if there's any spagetti code. 
+- Focus on modularity, reusablity, DRY, clean code, readability!
