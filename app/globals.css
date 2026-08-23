@@ -284,8 +284,8 @@ button {
 .entered .reticle {
   opacity: 0.5;
 }
-/* Place the targeted flower's short interaction hint below the reticle. */
-.flower-prompt {
+/* Place the targeted garden item's short interaction hint below the reticle. */
+.garden-prompt {
   position: absolute;
   z-index: 9;
   left: 50%;
@@ -299,21 +299,21 @@ button {
   border: 1px solid #efe5c53d;
   backdrop-filter: blur(6px);
 }
-/* Give the flower's name a warmer, more literary voice. */
-.flower-prompt strong {
+/* Give the living object's name a warmer, more literary voice. */
+.garden-prompt strong {
   display: block;
   font: 15px var(--serif);
 }
-/* Keep the action instruction visually secondary to the flower name. */
-.flower-prompt span {
+/* Keep the action instruction visually secondary to the object's name. */
+.garden-prompt span {
   display: block;
   margin-top: 3px;
   font-size: 7px;
   letter-spacing: 0.15em;
   text-transform: uppercase;
 }
-/* Present an inspected flower as a calm card over the paused garden. */
-.flower-memory {
+/* Present an inspected flower or tree as a calm card over the paused garden. */
+.garden-inspection {
   position: fixed;
   z-index: 12;
   left: 50%;
@@ -330,36 +330,36 @@ button {
   text-align: center;
 }
 /* Dim the garden behind the native modal without hiding its sense of place. */
-.flower-memory::backdrop {
+.garden-inspection::backdrop {
   background: #0b1c1466;
   backdrop-filter: blur(3px);
 }
 /* Label the card type without competing with its species name. */
-.flower-memory-kicker {
+.garden-inspection-kicker {
   margin: 0 0 18px;
   font-size: 8px;
   letter-spacing: 0.24em;
   text-transform: uppercase;
 }
 /* Make the common name the card's strongest piece of information. */
-.flower-memory h2 {
+.garden-inspection h2 {
   margin: 0;
   font: 400 44px/0.95 var(--serif);
 }
 /* Display the botanical name in the conventional italic style. */
-.flower-memory em {
+.garden-inspection em {
   display: block;
   margin-top: 8px;
   color: #64735f;
   font: italic 14px var(--serif);
 }
 /* Give the personal memory enough whitespace to be read slowly. */
-.flower-memory-note {
+.garden-inspection-note {
   margin: 28px 0;
   font: italic 18px/1.45 var(--serif);
 }
 /* Keep the return action understated and consistent with the threshold button. */
-.flower-memory button {
+.garden-inspection button {
   padding: 9px 1px;
   border: 0;
   border-bottom: 1px solid #29423366;

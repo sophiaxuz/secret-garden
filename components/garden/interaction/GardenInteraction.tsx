@@ -4,39 +4,39 @@ import { useFrame, useThree } from "@react-three/fiber";
 import { useCallback, useEffect, useRef, useState } from "react";
 // Three provides raycasting, vectors, and scene-object types.
 import * as THREE from "three";
-// Every interactive flower exposes the same small memory shape.
-import type { FlowerMemory } from "./flower-memory";
-// This tested rule resolves a flower memory from any of its nested visible parts.
-import { findFlowerMemory } from "./find-flower-memory";
-// The registry exposes only simple flower hit volumes to the raycaster.
-import { useFlowerInteractionRegistry } from "./FlowerInteractionRegistry";
+// This tested rule resolves identity from a registered garden hit volume.
+import { findGardenItem } from "./find-garden-item";
+// The registry exposes only inexpensive inspectable hit volumes to the raycaster.
+import { useGardenInteractionRegistry } from "./GardenInteractionRegistry";
+// Flowers and trees cross this interaction seam with the same small data shape.
+import type { GardenItem } from "./garden-item";
 
-// These callbacks let this module report results without owning the HTML UI.
-type FlowerInteractionProps = {
-  // Disable targeting before the visitor enters the garden.
+// These callbacks report targeting results without coupling behavior to HTML UI.
+type GardenInteractionProps = {
+  // Disable targeting before entry or while an inspection card is open.
   active: boolean;
-  // Report the flower under the desktop reticle.
-  onTargetChange: (flower: FlowerMemory | null) => void;
+  // Report the flower or tree beneath the desktop reticle.
+  onTargetChange: (item: GardenItem | null) => void;
   // Report an explicit click, tap, or E-key inspection.
-  onInspect: (flower: FlowerMemory) => void;
+  onInspect: (item: GardenItem) => void;
 };
 
-// Turn first-person aiming and direct touch taps into flower inspections.
-export function FlowerInteraction({
+// Turn first-person aiming and direct touch taps into garden inspections.
+export function GardenInteraction({
   active,
   onTargetChange,
   onInspect,
-}: FlowerInteractionProps) {
+}: GardenInteractionProps) {
   // Read the live camera and canvas from the surrounding Canvas.
   const { camera, gl } = useThree();
-  // Read the stable list containing only registered flower hit volumes.
-  const interactionRegistry = useFlowerInteractionRegistry();
+  // Read the stable list of registered flower and tree hit volumes.
+  const interactionRegistry = useGardenInteractionRegistry();
   // Reuse one raycaster instead of allocating one every frame.
   const raycaster = useRef(new THREE.Raycaster());
   // `(0, 0)` is the exact center of normalized screen coordinates.
   const screenCenter = useRef(new THREE.Vector2(0, 0));
   // Keep the current desktop target available to event handlers.
-  const currentTarget = useRef<FlowerMemory | null>(null);
+  const currentTarget = useRef<GardenItem | null>(null);
   // Remember where a touch began so dragging is not mistaken for tapping.
   const touchStart = useRef<[number, number] | null>(null);
   // Throttle desktop raycasts to ten checks per second.
@@ -44,17 +44,17 @@ export function FlowerInteraction({
   // Touch devices use tap coordinates instead of the hidden center reticle.
   const [touchDevice, setTouchDevice] = useState(false);
 
-  // Cast a ray at any normalized screen coordinate and inspect only its first hit.
-  const flowerAt = useCallback(
+  // Cast a ray at one screen coordinate and resolve only its nearest target.
+  const itemAt = useCallback(
     (screenPosition: THREE.Vector2) => {
-      // Limit interaction to nearby flowers.
+      // Limit interaction to garden life close enough to notice intimately.
       raycaster.current.far = 4.5;
       // Build a world-space ray from the camera through the requested point.
       raycaster.current.setFromCamera(screenPosition, camera);
-      // Ask the registry to search only simple flower volumes, never the scene tree.
+      // Search registered hit volumes instead of traversing the complete scene.
       const nearest = interactionRegistry.raycast(raycaster.current)[0];
-      // Resolve the memory stored on the nearest target's containing flower group.
-      return findFlowerMemory(nearest?.object ?? null);
+      // Resolve identity stored on the nearest target's containing scene group.
+      return findGardenItem(nearest?.object ?? null);
     },
     [camera, interactionRegistry],
   );
@@ -65,9 +65,9 @@ export function FlowerInteraction({
     setTouchDevice(window.matchMedia("(pointer: coarse)").matches);
   }, []);
 
-  // Update the highlighted desktop flower at a controlled frequency.
+  // Update the highlighted desktop target at a controlled frequency.
   useFrame(({ clock }) => {
-    // Touch visitors select directly by tapping, so no hidden-center scan is needed.
+    // Touch visitors select directly by tapping, so no center scan is needed.
     if (!active || touchDevice) {
       if (currentTarget.current) {
         currentTarget.current = null;
@@ -79,21 +79,21 @@ export function FlowerInteraction({
     if (clock.elapsedTime - lastRaycastAt.current < 0.1) return;
     // Record this scan time for the next throttle check.
     lastRaycastAt.current = clock.elapsedTime;
-    // Find the nearest registered flower beneath the reticle.
-    const flower = flowerAt(screenCenter.current);
+    // Find the nearest registered flower or tree beneath the reticle.
+    const item = itemAt(screenCenter.current);
     // Avoid a React render when the target did not change.
-    if (flower?.id === currentTarget.current?.id) return;
+    if (item?.id === currentTarget.current?.id) return;
     // Store and report the new target.
-    currentTarget.current = flower;
-    onTargetChange(flower);
+    currentTarget.current = item;
+    onTargetChange(item);
   });
 
-  // Convert mouse, keyboard, and touch input into explicit inspection actions.
+  // Convert mouse, keyboard, and touch input into explicit inspections.
   useEffect(() => {
-    // Inspect the centered desktop flower when one exists.
+    // Inspect the centered desktop target when one exists.
     const inspectCurrent = (event?: Event) => {
       if (!active || !currentTarget.current) return;
-      // Prevent Drei's document click listener from immediately re-locking the mouse.
+      // Stop Drei's document click listener from immediately relocking the mouse.
       event?.stopPropagation();
       onInspect(currentTarget.current);
     };
@@ -103,7 +103,7 @@ export function FlowerInteraction({
     };
     // Route the earliest reliable pointer event by input type.
     const beginPointer = (event: PointerEvent) => {
-      // Pointer-locked mice reliably emit pointerdown even when click is absent.
+      // Pointer-locked mice emit pointerdown reliably even when click is absent.
       if (event.pointerType === "mouse" && event.button === 0) {
         inspectCurrent(event);
         return;
@@ -113,16 +113,16 @@ export function FlowerInteraction({
         touchStart.current = [event.clientX, event.clientY];
       }
     };
-    // Inspect the flower at the actual tap coordinate when the finger did not drag.
+    // Inspect the item at the tap coordinate when the finger did not drag.
     const finishTouch = (event: PointerEvent) => {
       if (event.pointerType !== "touch" || !touchStart.current || !active)
         return;
-      // Measure how far the finger moved between press and release.
+      // Measure movement between the finger's press and release.
       const distance = Math.hypot(
         event.clientX - touchStart.current[0],
         event.clientY - touchStart.current[1],
       );
-      // Clear the stored point before any inspection changes React state.
+      // Clear the stored point before inspection changes React state.
       touchStart.current = null;
       // A longer movement was a look gesture rather than a tap.
       if (distance > 10) return;
@@ -132,11 +132,11 @@ export function FlowerInteraction({
         ((event.clientX - bounds.left) / bounds.width) * 2 - 1,
         -((event.clientY - bounds.top) / bounds.height) * 2 + 1,
       );
-      // Inspect only when the tapped hit volume belongs to a nearby flower.
-      const flower = flowerAt(point);
-      if (flower) onInspect(flower);
+      // Inspect only when the tapped registered volume belongs to nearby life.
+      const item = itemAt(point);
+      if (item) onInspect(item);
     };
-    // Pointerdown works for a locked mouse and also begins touch gestures.
+    // Pointerdown supports a locked mouse and begins touch gestures.
     gl.domElement.addEventListener("pointerdown", beginPointer);
     gl.domElement.addEventListener("pointerup", finishTouch);
     // Keyboard events continue to work while pointer lock is active.
@@ -147,7 +147,7 @@ export function FlowerInteraction({
       gl.domElement.removeEventListener("pointerup", finishTouch);
       window.removeEventListener("keydown", inspectWithKeyboard);
     };
-  }, [active, flowerAt, gl, onInspect]);
+  }, [active, gl, itemAt, onInspect]);
 
   // This module changes behavior but does not render geometry itself.
   return null;
