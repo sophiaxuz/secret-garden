@@ -6,18 +6,13 @@ import { useRef } from "react";
 import * as THREE from "three";
 // One shared target follows the squirrel without registering its many meshes.
 import { GardenInteractionTarget } from "../interaction/GardenInteractionTarget";
-// Shared habitat data keeps the squirrel's route easy to relocate with the garden.
-import { ANIMAL_HABITATS, createRoundTripRoute } from "./animal-habitats";
 // The squirrel uses the identity and highlight shared by all animals.
 import type { AnimatedAnimalProps } from "./animal-identities";
+// The pure motion seam owns Hazel's complete ground and tree-climbing journey.
+import { getSquirrelMotion } from "./squirrel-motion";
 
-// Reuse route endpoints so the animation does not allocate vectors each frame.
-const {
-  start: SQUIRREL_START,
-  end: SQUIRREL_END,
-  outboundHeading: OUTBOUND_HEADING,
-  returnHeading: RETURN_HEADING,
-} = createRoundTripRoute(ANIMAL_HABITATS.squirrel);
+// This stable pose supplies both the initial render and reduced-motion fallback.
+const SQUIRREL_REST_POSE = getSquirrelMotion(0);
 // Build a small squirrel pausing near the edge of the path.
 export function Squirrel({
   animated = true,
@@ -44,101 +39,44 @@ export function Squirrel({
       return;
     // Return to a stable grounded pose if reduced motion is enabled live.
     if (!animated) {
-      squirrel.current.position.copy(SQUIRREL_START);
-      squirrel.current.rotation.set(0, OUTBOUND_HEADING, 0);
+      squirrel.current.position.set(...SQUIRREL_REST_POSE.position);
+      squirrel.current.rotation.set(
+        SQUIRREL_REST_POSE.pitch,
+        SQUIRREL_REST_POSE.heading,
+        0,
+      );
       tail.current.rotation.z = -0.35;
       leftPaw.current.rotation.x = 0.35;
       rightPaw.current.rotation.x = 0.35;
       return;
     }
-    // Loop through pauses and two short scampering journeys.
-    const cycle = clock.elapsedTime % 22;
-    // Each phase chooses targets that the body will blend toward smoothly.
-    let desiredPitch = squirrel.current.rotation.x;
-    let desiredHeading = squirrel.current.rotation.y;
-    // Run energy rises and falls around each burst instead of switching instantly.
-    let runEnergy = 0;
-
-    if (cycle < 4) {
-      // Pause at the starting point and sniff with a small forward lean.
-      squirrel.current.position.copy(SQUIRREL_START);
-      squirrel.current.position.y += Math.abs(Math.sin(cycle * 2.2)) * 0.035;
-      desiredPitch = 0.1 + Math.sin(cycle * 2.2) * 0.06;
-      // Look around early, then face the route just before setting off.
-      const scanAmount = 1 - THREE.MathUtils.smoothstep(cycle, 2.8, 4);
-      desiredHeading =
-        OUTBOUND_HEADING + Math.sin(cycle * 1.1) * 0.28 * scanAmount;
-    } else if (cycle < 9) {
-      // Accelerate smoothly toward cover on the far side of the path.
-      const progress = (cycle - 4) / 5;
-      const eased = THREE.MathUtils.smoothstep(progress, 0, 1);
-      squirrel.current.position.lerpVectors(
-        SQUIRREL_START,
-        SQUIRREL_END,
-        eased,
-      );
-      // Quick repeated bounds make the run read as a squirrel rather than a glide.
-      squirrel.current.position.y +=
-        Math.abs(Math.sin(progress * Math.PI * 9)) * 0.16;
-      desiredPitch = -0.08;
-      desiredHeading = OUTBOUND_HEADING;
-      runEnergy = Math.sin(progress * Math.PI);
-    } else if (cycle < 13) {
-      // Sit upright at the far point and scan the garden before returning.
-      squirrel.current.position.copy(SQUIRREL_END);
-      squirrel.current.position.y += Math.sin(cycle * 2.5) * 0.018;
-      desiredPitch = -0.12;
-      // Turn during the pause and finish facing home before the return burst.
-      const scanAmount = 1 - THREE.MathUtils.smoothstep(cycle, 11.8, 13);
-      desiredHeading =
-        RETURN_HEADING + Math.sin(cycle * 0.9) * 0.28 * scanAmount;
-    } else if (cycle < 18) {
-      // Follow the same bounding gait back toward the original patch.
-      const progress = (cycle - 13) / 5;
-      const eased = THREE.MathUtils.smoothstep(progress, 0, 1);
-      squirrel.current.position.lerpVectors(
-        SQUIRREL_END,
-        SQUIRREL_START,
-        eased,
-      );
-      squirrel.current.position.y +=
-        Math.abs(Math.sin(progress * Math.PI * 9)) * 0.16;
-      desiredPitch = -0.08;
-      desiredHeading = RETURN_HEADING;
-      runEnergy = Math.sin(progress * Math.PI);
-    } else {
-      // Settle at the starting point before the next foraging loop.
-      squirrel.current.position.copy(SQUIRREL_START);
-      desiredPitch = 0;
-      // Turn back toward the foraging route while resting between loops.
-      desiredHeading =
-        OUTBOUND_HEADING +
-        Math.sin(cycle) *
-          0.18 *
-          (1 - THREE.MathUtils.smoothstep(cycle, 20.8, 22));
-    }
+    // Ask the public motion seam for this frame's meaningful world pose.
+    const pose = getSquirrelMotion(clock.elapsedTime);
+    // Place Hazel directly on the continuous ground, trunk, or branch path.
+    squirrel.current.position.set(...pose.position);
 
     // Blend body pitch so pausing and running never switch in a single frame.
     squirrel.current.rotation.x = THREE.MathUtils.damp(
       squirrel.current.rotation.x,
-      desiredPitch,
+      pose.pitch,
       6,
       delta,
     );
     // Measure the shortest signed angle to avoid a sudden full-body spin.
     const headingDifference = Math.atan2(
-      Math.sin(desiredHeading - squirrel.current.rotation.y),
-      Math.cos(desiredHeading - squirrel.current.rotation.y),
+      Math.sin(pose.heading - squirrel.current.rotation.y),
+      Math.cos(pose.heading - squirrel.current.rotation.y),
     );
-    // Turn gradually, including while preparing for the return journey.
+    // Turn gradually while approaching, circling, perching, and returning.
     squirrel.current.rotation.y += headingDifference * Math.min(1, delta * 4.5);
-    // Combine calm tail swishes with a faster balancing motion during a run.
+    // Combine calm tail swishes with faster balance during runs and climbing.
     tail.current.rotation.z =
       -0.35 +
       Math.sin(clock.elapsedTime * 1.5) * 0.16 +
-      Math.sin(clock.elapsedTime * 11) * 0.28 * runEnergy;
-    // Alternate the forepaws rapidly during each running phase.
-    const pawSwing = Math.sin(clock.elapsedTime * 15) * 0.55 * runEnergy;
+      Math.sin(clock.elapsedTime * 11) * 0.28 * pose.motionEnergy;
+    // Alternate the forepaws rapidly during running, ascent, and descent.
+    const pawSwing =
+      Math.sin(clock.elapsedTime * 15) * 0.55 * pose.motionEnergy;
     leftPaw.current.rotation.x = 0.35 + pawSwing;
     rightPaw.current.rotation.x = 0.35 - pawSwing;
   });
@@ -147,8 +85,8 @@ export function Squirrel({
   return (
     <group
       ref={squirrel}
-      position={SQUIRREL_START.toArray()}
-      rotation={[0, 0.75, 0]}
+      position={SQUIRREL_REST_POSE.position}
+      rotation={[SQUIRREL_REST_POSE.pitch, SQUIRREL_REST_POSE.heading, 0]}
       scale={0.42}
     >
       {/* This volume includes the squirrel's body, head, and upright tail. */}

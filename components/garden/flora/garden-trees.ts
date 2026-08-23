@@ -3,11 +3,21 @@ import type { TreeItem } from "../interaction/garden-item";
 
 // Every tree uses this unscaled trunk radius in both rendering and navigation.
 export const TREE_TRUNK_RADIUS = 0.38;
+// The narrower top radius defines the same tapered bark used by climbing motion.
+export const TREE_TRUNK_TOP_RADIUS = 0.22;
+// Trunk height is shared by rendering and height-sensitive animal contact.
+export const TREE_TRUNK_HEIGHT = 4.2;
+// Every tree shares one low branch where birds or squirrels can visibly pause.
+export const TREE_BRANCH_LOCAL_POSITION = [0.62, 2.9, 0] as const;
+// The branch reaches from the trunk toward the positive local X direction.
+export const TREE_BRANCH_LENGTH = 1.35;
+// This point sits near the outer branch while remaining beneath the canopy.
+export const TREE_BRANCH_PERCH_LOCAL_POSITION = [1.05, 3.05, 0] as const;
 
 // Named fields keep tree placement, scale, and identity together.
-type GardenTree = {
+export type GardenTree = {
   // Position stores x, y, and z coordinates in the scene.
-  position: [number, number, number];
+  readonly position: readonly [number, number, number];
   // Scale varies the shared low-poly tree archetype.
   scale: number;
   // Item is the identity exposed by click, tap, and E-key inspection.
@@ -82,4 +92,17 @@ export const GARDEN_TREES = [
       note: "Stand close and the leaves sound almost like distant rain.",
     },
   },
-] satisfies readonly GardenTree[];
+] as const satisfies readonly GardenTree[];
+
+// Derive the only valid tree identity strings directly from the garden data.
+export type GardenTreeId = (typeof GARDEN_TREES)[number]["item"]["id"];
+
+// Find one named tree or fail loudly when a cross-module habitat becomes stale.
+export function getGardenTreeById(id: GardenTreeId): GardenTree {
+  // Tree identities are the stable link used by animal behavior.
+  const tree = GARDEN_TREES.find((candidate) => candidate.item.id === id);
+  // A missing target would otherwise place an animal at an invented coordinate.
+  if (!tree) throw new Error(`Garden tree "${id}" does not exist.`);
+  // Return the complete placement, scale, and identity through one interface.
+  return tree;
+}

@@ -1,5 +1,7 @@
 // Three turns shared coordinate tuples into vectors used by animation modules.
 import * as THREE from "three";
+// Tree ids keep climb habitats synchronized with actual named garden trees.
+import type { GardenTreeId } from "../flora/garden-trees";
 
 // A habitat point stores immutable garden X, Y, and Z coordinates in that order.
 export type HabitatPoint = readonly [number, number, number];
@@ -26,8 +28,12 @@ type AnimalHabitats = {
     readonly groundEnd: HabitatPoint;
     readonly perch: HabitatPoint;
   };
-  // Each ground animal owns one simple out-and-back habitat.
-  readonly squirrel: RoundTripHabitat;
+  // The squirrel starts on the ground and names the tree it climbs.
+  readonly squirrel: {
+    readonly start: HabitatPoint;
+    readonly treeId: GardenTreeId;
+  };
+  // Each remaining ground animal owns one simple out-and-back habitat.
   readonly rabbit: RoundTripHabitat;
   readonly dog: RoundTripHabitat;
   readonly cat: RoundTripHabitat;
@@ -47,10 +53,10 @@ export const ANIMAL_HABITATS = {
     groundEnd: [4.1, 0.23, 6.7],
     perch: [6.2, 1.75, 4.4],
   },
-  // The squirrel crosses a shaded patch on the garden's western side.
+  // The squirrel forages west of the path before climbing the nearby Moss oak.
   squirrel: {
     start: [-7.2, 0.26, -4.8],
-    end: [-11.5, 0.26, -1.2],
+    treeId: "moss-oak",
   },
   // The rabbit moves between two sunny feeding patches near the entrance.
   rabbit: {
