@@ -5,9 +5,9 @@ import { useRef } from "react";
 // Three provides the Group type used by the refs.
 import * as THREE from "three";
 // One shared target follows the squirrel without registering its many meshes.
-import { GardenInteractionTarget } from "../interaction/GardenInteractionTarget";
+import { GardenInteractionTarget } from "../../interaction/GardenInteractionTarget";
 // The squirrel uses the identity and highlight shared by all animals.
-import type { AnimatedAnimalProps } from "./animal-identities";
+import type { AnimatedAnimalProps } from "../animal-identities";
 // The pure motion seam owns Hazel's complete ground and tree-climbing journey.
 import { getSquirrelMotion } from "./squirrel-motion";
 

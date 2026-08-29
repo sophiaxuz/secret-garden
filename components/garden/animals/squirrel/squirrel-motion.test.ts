@@ -1,9 +1,9 @@
 // Vitest protects the squirrel's complete observable tree-climbing journey.
 import { expect, test } from "vitest";
 // Shared tree data prevents the test from inventing Moss oak coordinates.
-import { getGardenTreeById } from "../flora/garden-trees";
+import { getGardenTreeById } from "../../flora/garden-trees";
 // Hazel's habitat names the real tree selected by production behavior.
-import { ANIMAL_HABITATS } from "./animal-habitats";
+import { ANIMAL_HABITATS } from "../animal-habitats";
 // The public motion seam returns Hazel's world pose for any elapsed instant.
 import { getSquirrelMotion } from "./squirrel-motion";
 

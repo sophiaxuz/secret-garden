@@ -5,9 +5,9 @@ import {
   TREE_TRUNK_HEIGHT,
   TREE_TRUNK_RADIUS,
   TREE_TRUNK_TOP_RADIUS,
-} from "../flora/garden-trees";
+} from "../../flora/garden-trees";
 // Habitat data names Hazel's resting patch and chosen climb tree.
-import { ANIMAL_HABITATS, type HabitatPoint } from "./animal-habitats";
+import { ANIMAL_HABITATS, type HabitatPoint } from "../animal-habitats";
 
 // One complete behavior loop includes rest, travel, climbing, and branch time.
 const SQUIRREL_CYCLE_SECONDS = 26;

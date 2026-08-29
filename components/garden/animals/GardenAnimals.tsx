@@ -6,7 +6,7 @@ import { Cat } from "./cat/Cat";
 import { Dog } from "./dog/Dog";
 import { Rabbit } from "./rabbit/Rabbit";
 import { Robin } from "./Robin";
-import { Squirrel } from "./Squirrel";
+import { Squirrel } from "./squirrel/Squirrel";
 // Every animal's world-space habitat anchors live in one shared map.
 import { ANIMAL_HABITATS } from "./animal-habitats";
 // Every rendered animal receives one stable inspectable identity from this cast.
