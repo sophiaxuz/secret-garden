@@ -38,10 +38,12 @@ export type UkGardenTime = {
   moonIntensity: number;
   hemisphereIntensity: number;
   environmentIntensity: number;
+  rendererExposure: number;
   // Colors coordinate the background, fog, atmosphere, and directional lights.
   skyColor: string;
   fogColor: string;
   hemisphereColor: string;
+  hemisphereGroundColor: string;
   sunColor: string;
 };
 
@@ -252,6 +254,8 @@ export function getUkGardenTime(instant: Date): UkGardenTime {
       : mixHex("#b78675", "#b9d8dc", smoothStep(0, 12, solar.elevationDegrees));
   // Daylight warms the sky-facing half of the hemisphere light.
   const hemisphereColor = mixHex("#8fa8c7", "#fff2ca", daylight);
+  // Warm reflected meadow light keeps shaded bark and foliage colourful by day.
+  const hemisphereGroundColor = mixHex("#17251e", "#89926c", daylight);
   // Low sun is amber and becomes creamy white as it climbs.
   const sunColor = mixHex(
     "#ff9f68",
@@ -286,13 +290,15 @@ export function getUkGardenTime(instant: Date): UkGardenTime {
     phase,
     sunPosition: solar.position,
     moonPosition,
-    sunIntensity: 2.45 * daylight,
+    sunIntensity: 3.4 * daylight,
     moonIntensity: 0.3 * moonlight,
-    hemisphereIntensity: 0.14 + 0.92 * daylight + 0.08 * moonlight,
-    environmentIntensity: 0.08 + 0.68 * daylight + 0.06 * moonlight,
+    hemisphereIntensity: 0.16 + 1.14 * daylight + 0.08 * moonlight,
+    environmentIntensity: 0.08 + 0.94 * daylight + 0.06 * moonlight,
+    rendererExposure: 1 + 0.12 * daylight,
     skyColor,
     fogColor,
     hemisphereColor,
+    hemisphereGroundColor,
     sunColor,
   };
 }

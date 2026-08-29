@@ -21,6 +21,18 @@ test("UK garden time follows daylight saving and seasonal daylight", () => {
   expect(summer.sunPosition[1]).toBeGreaterThan(winter.sunPosition[1] * 2);
 });
 
+// A clear summer noon should produce high-key illumination, not muted overcast light.
+test("summer midday gives the garden bright layered daylight", () => {
+  // Pin the instant near London's highest annual Sun for a deterministic baseline.
+  const midday = getUkGardenTime(new Date("2026-06-21T12:00:00.000Z"));
+  // Direct sunlight must be strong enough to create crisp readable form and shadow.
+  expect(midday.sunIntensity).toBeGreaterThanOrEqual(3.2);
+  // Sky fill must keep the shaded side of trees and animals visibly colourful.
+  expect(midday.hemisphereIntensity).toBeGreaterThanOrEqual(1.25);
+  // Reflected environmental light prevents the whole meadow from reading grey-green.
+  expect(midday.environmentIntensity).toBeGreaterThanOrEqual(1);
+});
+
 // A summer midnight checks that the Moon takes over the garden after sunset.
 test("moonlight replaces sunlight during a UK night", () => {
   // At this instant, London observes British Summer Time, one hour ahead of UTC.
@@ -34,4 +46,7 @@ test("moonlight replaces sunlight during a UK night", () => {
   expect(night.moonPosition[1]).toBeGreaterThan(0);
   // Moonlight becomes the dominant directional light once daylight has disappeared.
   expect(night.moonIntensity).toBeGreaterThan(night.sunIntensity);
+  // Daytime improvements must not dim or recolour the established night rendering.
+  expect(night.rendererExposure).toBe(1);
+  expect(night.hemisphereGroundColor).toBe("#17251e");
 });
