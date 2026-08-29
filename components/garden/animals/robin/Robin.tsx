@@ -5,24 +5,27 @@ import { useRef } from "react";
 // Three provides group types, interpolation helpers, and vectors.
 import * as THREE from "three";
 // One shared target follows the robin through hopping and flight phases.
-import { GardenInteractionTarget } from "../interaction/GardenInteractionTarget";
+import { GardenInteractionTarget } from "../../interaction/GardenInteractionTarget";
 // Shared habitat data supplies the robin's first ground position.
-import { ANIMAL_HABITATS, createHabitatVector } from "./animal-habitats";
+import { ANIMAL_HABITATS, createHabitatVector } from "../animal-habitats";
 // Real tree branch measurements let the robin visit every tree without floating.
 import {
   GARDEN_TREES,
   TREE_BRANCH_PERCH_LOCAL_POSITION,
-} from "../flora/garden-trees";
+} from "../../flora/garden-trees";
 // The shared planner varies hops, perch pauses, and attention across each visit.
-import { createAnimalRoutine, type AnimalRoutine } from "./animal-routine";
+import {
+  createAnimalRoutine,
+  type AnimalRoutine,
+} from "../behavior/animal-routine";
 // Garden-wide roaming selects new ground patches between changing tree perches.
 import {
   createAnimalRoamingRoute,
   placeAlongRoamingJourney,
   type AnimalRoamingRoute,
-} from "./animal-roaming";
+} from "../behavior/animal-roaming";
 // The robin uses the same identity and highlight interface as every animal.
-import type { AnimatedAnimalProps } from "./animal-identities";
+import type { AnimatedAnimalProps } from "../animal-identities";
 
 // Reuse the authored first position for initial render and reduced-motion visitors.
 const ROBIN_HOME = createHabitatVector(ANIMAL_HABITATS.robin.groundStart);

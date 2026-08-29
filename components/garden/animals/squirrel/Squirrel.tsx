@@ -11,12 +11,15 @@ import type { AnimatedAnimalProps } from "../animal-identities";
 // Habitat data supplies Hazel's first foraging position.
 import { ANIMAL_HABITATS, type HabitatPoint } from "../animal-habitats";
 // A variable outer clock changes when Hazel decides to begin the full journey.
-import { createAnimalRoutine, type AnimalRoutine } from "../animal-routine";
+import {
+  createAnimalRoutine,
+  type AnimalRoutine,
+} from "../behavior/animal-routine";
 // Garden-wide destinations let each tree climb begin and end in different places.
 import {
   createAnimalRoamingRoute,
   type AnimalRoamingRoute,
-} from "../animal-roaming";
+} from "../behavior/animal-roaming";
 // The pure motion seam owns Hazel's complete ground and tree-climbing journey.
 import { getSquirrelMotion, SQUIRREL_CYCLE_SECONDS } from "./squirrel-motion";
 

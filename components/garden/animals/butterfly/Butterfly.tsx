@@ -5,19 +5,22 @@ import { useRef } from "react";
 // Three provides the Group type and double-sided material constant.
 import * as THREE from "three";
 // One shared target follows the butterfly without raycasting each visible wing.
-import { GardenInteractionTarget } from "../interaction/GardenInteractionTarget";
+import { GardenInteractionTarget } from "../../interaction/GardenInteractionTarget";
 // The shared point type gives butterfly origins the same habitat vocabulary as animals.
-import type { HabitatPoint } from "./animal-habitats";
+import type { HabitatPoint } from "../animal-habitats";
 // Variable flight durations keep arrivals from following a visible metronome.
-import { createAnimalRoutine, type AnimalRoutine } from "./animal-routine";
+import {
+  createAnimalRoutine,
+  type AnimalRoutine,
+} from "../behavior/animal-routine";
 // The roaming planner lets a butterfly cross the full garden rather than orbit one flower.
 import {
   createAnimalRoamingRoute,
   placeAlongRoamingJourney,
   type AnimalRoamingRoute,
-} from "./animal-roaming";
+} from "../behavior/animal-roaming";
 // Butterfly props extend the identity and highlight shared by all animals.
-import type { AnimatedAnimalProps } from "./animal-identities";
+import type { AnimatedAnimalProps } from "../animal-identities";
 
 // These values make each butterfly follow a different route and color palette.
 type ButterflyProps = AnimatedAnimalProps & {

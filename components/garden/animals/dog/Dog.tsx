@@ -9,13 +9,16 @@ import { GardenInteractionTarget } from "../../interaction/GardenInteractionTarg
 // Shared habitat data supplies the dog's first position when a visit begins.
 import { ANIMAL_HABITATS, createHabitatVector } from "../animal-habitats";
 // The shared planner varies pauses and attention choices across every visit.
-import { createAnimalRoutine, type AnimalRoutine } from "../animal-routine";
+import {
+  createAnimalRoutine,
+  type AnimalRoutine,
+} from "../behavior/animal-routine";
 // Garden-wide roaming replaces the dog's former two-point local patrol.
 import {
   createAnimalRoamingRoute,
   placeAlongRoamingJourney,
   type AnimalRoamingRoute,
-} from "../animal-roaming";
+} from "../behavior/animal-roaming";
 // The dog uses the identity and highlight shared by all animals.
 import type { AnimatedAnimalProps } from "../animal-identities";
 // DogModel keeps all visible mesh geometry out of this behavior module.

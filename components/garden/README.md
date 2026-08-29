@@ -31,7 +31,7 @@ flowchart LR
     World --> Terrain["terrain/<br/>ground + path + grass"]
     World --> Flora["flora/<br/>flowers + trees"]
     World --> Animals["animals/<br/>models + habitats + motion"]
-    Routine["animal-routine + animal-roaming<br/>variable phases + garden-wide destinations"] --> Animals
+    Routine["animals/behavior/<br/>variable phases + garden-wide destinations"] --> Animals
 
     Flora --> Targets["GardenInteractionTarget<br/>small invisible hit volumes"]
     Animals --> Targets
@@ -68,5 +68,21 @@ The most important boundaries are:
 | `weather/` | Open-Meteo mapping, resilient client refresh, and instanced rain |
 
 `Garden.tsx` and `GardenWorld.tsx` are composition modules. Feature implementation should remain in the responsibility folder that owns it.
+
+The animal folder follows the same rule internally:
+
+```text
+animals/
+├── behavior/              shared timing and garden-wide roaming
+├── butterfly/             Butterfly component
+├── cat/                   Cat behavior and visible model
+├── dog/                   Dog behavior and visible model
+├── rabbit/                Rabbit behavior and visible model
+├── robin/                 Robin component
+├── squirrel/              Squirrel component, motion seam, and tests
+├── animal-habitats.ts     initial world positions
+├── animal-identities.ts   names and inspection stories
+└── GardenAnimals.tsx      animal scene composition
+```
 
 `experience/GardenExperience.tsx` mounts `audio/NatureSoundscape.tsx` directly because browser autoplay rules require its `start()` interface to run inside the threshold click gesture. It remains part of the garden module even though it sits beside, rather than inside, the WebGL canvas.

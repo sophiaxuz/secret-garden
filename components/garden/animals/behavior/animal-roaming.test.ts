@@ -1,9 +1,9 @@
 // Vitest verifies garden-wide roaming without mounting WebGL or React.
 import { expect, test } from "vitest";
 // Garden bounds define the complete area destinations are allowed to explore.
-import { GARDEN_LAYOUT } from "../garden-layout";
+import { GARDEN_LAYOUT } from "../../garden-layout";
 // Tree footprints protect animals from choosing rest points inside bark.
-import { GARDEN_TREES, TREE_TRUNK_RADIUS } from "../flora/garden-trees";
+import { GARDEN_TREES, TREE_TRUNK_RADIUS } from "../../flora/garden-trees";
 // The route planner is the narrow behavior seam exercised by these tests.
 import { createAnimalRoamingRoute } from "./animal-roaming";
 

@@ -1,11 +1,11 @@
 // React state and effects observe the visitor's reduced-motion preference.
 import { useEffect, useState } from "react";
 // Group the garden's moving animal life behind one small scene interface.
-import { Butterfly } from "./Butterfly";
+import { Butterfly } from "./butterfly/Butterfly";
 import { Cat } from "./cat/Cat";
 import { Dog } from "./dog/Dog";
 import { Rabbit } from "./rabbit/Rabbit";
-import { Robin } from "./Robin";
+import { Robin } from "./robin/Robin";
 import { Squirrel } from "./squirrel/Squirrel";
 // Every animal's world-space habitat anchors live in one shared map.
 import { ANIMAL_HABITATS } from "./animal-habitats";
@@ -80,27 +80,27 @@ export function GardenAnimals({
           targetedItemId,
         )}
       />
-      {/* The robin waits near the starting path. */}
+      {/* The robin begins near the path before roaming between tree branches. */}
       <Robin
         animated={animated}
         {...interactionPropsFor(ANIMAL_IDENTITIES.robin, targetedItemId)}
       />
-      {/* The squirrel stays lower and farther into the garden. */}
+      {/* The squirrel links changing foraging patches through its tree climb. */}
       <Squirrel
         animated={animated}
         {...interactionPropsFor(ANIMAL_IDENTITIES.squirrel, targetedItemId)}
       />
-      {/* The rabbit forages among the flowers on the sunny side. */}
+      {/* The rabbit begins sunny-side foraging before ranging more widely. */}
       <Rabbit
         animated={animated}
         {...interactionPropsFor(ANIMAL_IDENTITIES.rabbit, targetedItemId)}
       />
-      {/* The dog follows a friendly patrol near the front of the garden. */}
+      {/* The dog starts near the entrance, then wanders throughout the garden. */}
       <Dog
         animated={animated}
         {...interactionPropsFor(ANIMAL_IDENTITIES.dog, targetedItemId)}
       />
-      {/* The cat quietly watches the deeper, shaded side of the garden. */}
+      {/* The cat starts in deep shade before choosing its own roaming route. */}
       <Cat
         animated={animated}
         {...interactionPropsFor(ANIMAL_IDENTITIES.cat, targetedItemId)}

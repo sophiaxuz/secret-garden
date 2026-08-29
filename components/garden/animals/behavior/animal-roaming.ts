@@ -1,11 +1,11 @@
 // Three vectors let the pure route planner hand positions directly to render code.
 import * as THREE from "three";
 // Garden dimensions keep every roaming destination inside the visible world.
-import { GARDEN_LAYOUT } from "../garden-layout";
+import { GARDEN_LAYOUT } from "../../garden-layout";
 // Rendered tree placement prevents a destination appearing inside a trunk.
-import { GARDEN_TREES, TREE_TRUNK_RADIUS } from "../flora/garden-trees";
+import { GARDEN_TREES, TREE_TRUNK_RADIUS } from "../../flora/garden-trees";
 // Habitat points are the shared immutable world-coordinate vocabulary.
-import type { HabitatPoint } from "./animal-habitats";
+import type { HabitatPoint } from "../animal-habitats";
 
 // Leave enough room for an animal's complete body at the garden boundary.
 const EDGE_CLEARANCE = 1.35;
