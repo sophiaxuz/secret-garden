@@ -4,26 +4,12 @@ import { GARDEN_LAYOUT } from "../garden-layout";
 import { Flower } from "./Flower";
 // Initial flower placement and identity data stays beside its renderer.
 import { INITIAL_FLOWERS } from "./garden-flowers";
+// The pure layout seam spreads future planted memories across the wider meadow.
+import { getPlantedFlowerPosition } from "./garden-flower-layout";
 // Tree placement and identity data stays beside its renderer as well.
 import { GARDEN_TREES } from "./garden-trees";
 // Tree hides trunk, canopy, highlighting, and interaction geometry.
 import { Tree } from "./Tree";
-
-// Find a planted flower's place in several spacious meadow plots.
-function getPlantedFlowerPosition(index: number): [number, number, number] {
-  // Two consecutive flowers share a row on opposite sides of the central clearing.
-  const pairIndex = Math.floor(index / 2);
-  // Ten rows fill the garden from its entrance toward its deeper edge.
-  const row = pairIndex % GARDEN_LAYOUT.plantedFlowers.rows;
-  // Later flowers move into additional columns instead of leaving the bounds.
-  const column =
-    Math.floor(pairIndex / GARDEN_LAYOUT.plantedFlowers.rows) %
-    GARDEN_LAYOUT.plantedFlowers.columns;
-  // Alternate the sign to place one flower on each side of the clearing.
-  const side = index % GARDEN_LAYOUT.plantedFlowers.sides ? 1 : -1;
-  // Return a position that remains inside the shared walkable garden limits.
-  return [side * (3.4 + column * 2.3), 0, 8.5 - row * 3.2];
-}
 
 // Render every flower and tree through one flora-focused scene interface.
 export function GardenFlora({

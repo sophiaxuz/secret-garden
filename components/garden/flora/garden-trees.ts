@@ -39,7 +39,7 @@ export type GardenTree = {
 // These six elders form a loose ring around the walkable garden.
 export const GARDEN_TREES = [
   {
-    position: [-14, 0, 7],
+    position: [-16.2, 0, 9.3],
     scale: 1.3,
     item: {
       kind: "tree",
@@ -54,7 +54,7 @@ export const GARDEN_TREES = [
     },
   },
   {
-    position: [14, 0, 4],
+    position: [16.2, 0, 6.5],
     scale: 1.6,
     item: {
       kind: "tree",
@@ -69,7 +69,7 @@ export const GARDEN_TREES = [
     },
   },
   {
-    position: [-12, 0, -7],
+    position: [-15.5, 0, -5],
     scale: 1.55,
     item: {
       kind: "tree",
@@ -84,7 +84,7 @@ export const GARDEN_TREES = [
     },
   },
   {
-    position: [12, 0, -11],
+    position: [15.5, 0, -8.5],
     scale: 1.4,
     item: {
       kind: "tree",
@@ -100,7 +100,7 @@ export const GARDEN_TREES = [
     },
   },
   {
-    position: [-13.5, 0, -20],
+    position: [-16, 0, -22],
     scale: 1.65,
     item: {
       kind: "tree",
@@ -116,7 +116,7 @@ export const GARDEN_TREES = [
     },
   },
   {
-    position: [13, 0, -21],
+    position: [16, 0, -22.5],
     scale: 1.5,
     item: {
       kind: "tree",

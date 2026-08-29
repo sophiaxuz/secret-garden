@@ -15,7 +15,7 @@ type GardenFlower = {
 // These six flowers form widely separated landmarks throughout the garden.
 export const INITIAL_FLOWERS = [
   {
-    position: [-4.8, 0, 8.2],
+    position: [-9.5, 0, 10.2],
     color: "#eee4cb",
     scale: 0.85,
     petals: 9,
@@ -27,7 +27,7 @@ export const INITIAL_FLOWERS = [
     },
   },
   {
-    position: [5.3, 0, 6.4],
+    position: [10.2, 0, 8.5],
     color: "#bf7e88",
     scale: 1.05,
     petals: 12,
@@ -40,7 +40,7 @@ export const INITIAL_FLOWERS = [
     },
   },
   {
-    position: [-7.2, 0, 1.2],
+    position: [-12, 0, 1.5],
     color: "#829cc0",
     scale: 0.9,
     petals: 5,
@@ -53,7 +53,7 @@ export const INITIAL_FLOWERS = [
     },
   },
   {
-    position: [7, 0, -3.2],
+    position: [12.5, 0, -4],
     color: "#e7c068",
     scale: 0.72,
     petals: 8,
@@ -65,7 +65,7 @@ export const INITIAL_FLOWERS = [
     },
   },
   {
-    position: [-7.3, 0, -11.8],
+    position: [-10.8, 0, -13.8],
     color: "#d397af",
     scale: 1.1,
     petals: 10,
@@ -77,7 +77,7 @@ export const INITIAL_FLOWERS = [
     },
   },
   {
-    position: [5.6, 0, -18.2],
+    position: [10, 0, -21.2],
     color: "#efe9dc",
     scale: 0.9,
     petals: 9,
