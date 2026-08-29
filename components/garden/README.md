@@ -78,7 +78,7 @@ animals/
 ├── cat/                   Cat behavior and visible model
 ├── dog/                   Dog behavior and visible model
 ├── rabbit/                Rabbit behavior and visible model
-├── robin/                 Robin component
+├── robin/                 Robin, permanent nest, and homecoming behavior
 ├── squirrel/              Squirrel component, motion seam, and tests
 ├── animal-habitats.ts     initial world positions
 ├── animal-identities.ts   names and inspection stories

@@ -8,11 +8,6 @@ import * as THREE from "three";
 import { GardenInteractionTarget } from "../../interaction/GardenInteractionTarget";
 // Shared habitat data supplies the robin's first ground position.
 import { ANIMAL_HABITATS, createHabitatVector } from "../animal-habitats";
-// Real tree branch measurements let the robin visit every tree without floating.
-import {
-  GARDEN_TREES,
-  TREE_BRANCH_PERCH_LOCAL_POSITION,
-} from "../../flora/garden-trees";
 // The shared planner varies hops, perch pauses, and attention across each visit.
 import {
   createAnimalRoutine,
@@ -26,17 +21,20 @@ import {
 } from "../behavior/animal-roaming";
 // The robin uses the same identity and highlight interface as every animal.
 import type { AnimatedAnimalProps } from "../animal-identities";
+// RobinNest keeps a permanent visible home even while its resident explores.
+import { RobinNest } from "./RobinNest";
+// Home data owns the named nest location and regular homecoming schedule.
+import {
+  ROBIN_NEST_POSITION,
+  ROBIN_TREE_PERCHES,
+  selectRobinPerchIndex,
+} from "./robin-home";
 
 // Reuse the authored first position for initial render and reduced-motion visitors.
 const ROBIN_HOME = createHabitatVector(ANIMAL_HABITATS.robin.groundStart);
-// Derive a real world-space perch from every rendered tree's scaled branch.
-const ROBIN_PERCHES = GARDEN_TREES.map(
-  ({ position, scale }) =>
-    new THREE.Vector3(
-      position[0] + TREE_BRANCH_PERCH_LOCAL_POSITION[0] * scale,
-      position[1] + TREE_BRANCH_PERCH_LOCAL_POSITION[1] * scale,
-      position[2] + TREE_BRANCH_PERCH_LOCAL_POSITION[2] * scale,
-    ),
+// Three vectors let the frame loop interpolate toward each tested immutable perch.
+const ROBIN_PERCHES = ROBIN_TREE_PERCHES.map(
+  (position) => new THREE.Vector3(...position),
 );
 
 // The wide perch range makes each sudden takeoff difficult to anticipate exactly.
@@ -99,10 +97,8 @@ export function Robin({
   }
   // Capture the initialized route for use inside the frame callback.
   const roamingRoute = roaming.current;
-  // Offset the tree sequence for this visit while eventually visiting every tree.
-  const firstPerchIndex = useRef(
-    Math.floor(personalitySeed) % ROBIN_PERCHES.length,
-  ).current;
+  // Offset away visits while the home selector retains fixed return intervals.
+  const awayPerchOffset = useRef(Math.floor(personalitySeed)).current;
 
   // Run an open-ended hop, fly, perch, and return routine.
   useFrame(({ clock }, delta) => {
@@ -133,10 +129,10 @@ export function Robin({
     const groundStart = roamingRoute.point(firstIndex);
     const groundEnd = roamingRoute.point(secondIndex);
     const nextGround = roamingRoute.point(nextIndex);
-    // Move to a different rendered tree after each complete behavior cycle.
+    // Explore changing branches but return to the permanent nest every third visit.
     const perch =
       ROBIN_PERCHES[
-        (firstPerchIndex + behavior.cycleIndex) % ROBIN_PERCHES.length
+        selectRobinPerchIndex(behavior.cycleIndex, awayPerchOffset)
       ];
     // Track whether wings should be visibly flapping this frame.
     const flying =
@@ -210,6 +206,8 @@ export function Robin({
   // Render the robin from lightweight rounded primitives.
   return (
     <>
+      {/* The named home remains visible and meaningful while the robin is away. */}
+      <RobinNest position={ROBIN_NEST_POSITION} />
       {/* This group holds and moves every visible part of the robin. */}
       <group ref={robin} position={ROBIN_HOME.toArray()} scale={0.34}>
         {/* This box follows both the robin's ground route and curved flights. */}

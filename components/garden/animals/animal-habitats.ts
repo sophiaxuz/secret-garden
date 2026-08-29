@@ -23,6 +23,8 @@ type AnimalHabitats = {
   // The robin begins here before roaming among generated patches and real trees.
   readonly robin: {
     readonly groundStart: HabitatPoint;
+    // A named tree makes home permanent even if the garden layout later changes.
+    readonly homeTreeId: GardenTreeId;
   };
   // The squirrel starts on the ground and names the tree it climbs.
   readonly squirrel: {
@@ -46,6 +48,8 @@ export const ANIMAL_HABITATS = {
   // The robin first appears near the path before choosing changing destinations.
   robin: {
     groundStart: [2.8, 0.23, 8],
+    // Threshold oak shelters the nest near the garden's remembered entrance.
+    homeTreeId: "threshold-oak",
   },
   // The squirrel forages west of the path before climbing the nearby Moss oak.
   squirrel: {
