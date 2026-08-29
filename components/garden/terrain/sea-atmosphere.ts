@@ -5,8 +5,16 @@ import type { GardenWeather } from "../weather/garden-weather";
 
 // This compact snapshot is the complete non-renderer interface used by Sea.
 export type SeaAtmosphere = {
-  // Water color follows the broad light phase before Three applies live lighting.
+  // Deep-water pigment follows the broad light phase before live lighting.
   waterColor: string;
+  // Shallow-water pigment reveals depth as the sea approaches the island.
+  shallowWaterColor: string;
+  // This world-space distance controls the gradual optical transition at shore.
+  shoreBlendDistance: number;
+  // Fine moving normals stop calm water reading as one polished polygon.
+  microRippleStrength: number;
+  // A restrained broken wash visually joins moving water to the island edge.
+  shoreFoamIntensity: number;
   // A normalized world direction points from the sea toward the visible Moon.
   moonDirection: readonly [number, number, number];
   // Reflection intensity already includes horizon, phase, and cloud visibility.
@@ -71,14 +79,39 @@ export function getSeaAtmosphere(
   // Base pigment shifts from luminous daytime teal to deep nocturnal blue.
   const waterColor =
     time.phase === "night"
-      ? "#173d58"
+      ? "#153a4b"
       : time.phase === "day"
-        ? "#3f8994"
-        : "#345f70";
+        ? "#377f88"
+        : "#2f5b68";
+  // Sandy shallows scatter more green light and remain lighter than open water.
+  const shallowWaterColor =
+    time.phase === "night"
+      ? "#315f63"
+      : time.phase === "day"
+        ? "#69aaa1"
+        : "#4c7977";
+  // A broad transition reads as underwater depth instead of a painted border.
+  const shoreBlendDistance = 3.4;
+  // Wind adds capillary detail, but calm weather must still retain subtle motion.
+  const microRippleStrength = clamp(
+    0.1 + weather.windSpeedKph / 180 + weather.rainIntensity * 0.08,
+    0.1,
+    0.3,
+  );
+  // Foam stays muted in calm weather and rises slightly with wind and rainfall.
+  const shoreFoamIntensity = clamp(
+    0.12 + weather.windSpeedKph / 160 + weather.rainIntensity * 0.08,
+    0.12,
+    0.36,
+  );
 
   // Return one complete immutable snapshot for both material and GPU uniforms.
   return {
     waterColor,
+    shallowWaterColor,
+    shoreBlendDistance,
+    microRippleStrength,
+    shoreFoamIntensity,
     moonDirection,
     moonReflectionIntensity,
     waveEnergy,

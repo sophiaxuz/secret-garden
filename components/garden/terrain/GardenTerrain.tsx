@@ -53,18 +53,18 @@ export function GardenTerrain({ time, weather }: GardenTerrainProps) {
     <>
       {/* Water renders first beneath every island surface and disappears into fog. */}
       <Sea time={time} weather={weather} />
-      {/* A slightly enlarged lower copy forms a narrow organic sandy shoreline. */}
+      {/* A barely enlarged lower copy leaves a slim wet-sand edge below the wash. */}
       <mesh
-        position={[0, -0.09, 0]}
+        position={[0, -0.075, 0]}
         rotation={[-Math.PI / 2, 0, 0]}
-        scale={[1.045, 1.045, 1]}
+        scale={[1.018, 1.018, 1]}
         receiveShadow
         userData={{ shadowCaster: false }}
       >
         {/* The shared outline makes the beach follow every irregular coastal bend. */}
         <shapeGeometry args={[islandShape, 8]} />
-        {/* Warm mineral color separates the land edge from blue-green water. */}
-        <meshStandardMaterial color="#c9b78b" roughness={0.98} />
+        {/* Darker damp mineral color avoids a bright artificial-looking border. */}
+        <meshStandardMaterial color="#9d906f" roughness={0.9} />
       </mesh>
       {/* Rotate the organic shape flat to create the complete garden island. */}
       <mesh

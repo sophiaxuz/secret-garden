@@ -58,3 +58,29 @@ test("rough weather increases wave energy and speed", () => {
   // The converted horizontal wind vector always stays normalized.
   expect(Math.hypot(...rough.windDirection)).toBeCloseTo(1);
 });
+
+// The reported visual bug is a uniform blue sheet meeting a hard grey coast.
+test("sea atmosphere contains depth, shoreline, and fine surface cues", () => {
+  // Use a calm twilight observation matching the user's captured scene closely.
+  const atmosphere = getSeaAtmosphere(
+    {
+      phase: "dusk",
+      moonPosition: [8, 18, -24],
+      moonIntensity: 0.12,
+    },
+    {
+      cloudCover: 45,
+      rainIntensity: 0,
+      windSpeedKph: 5,
+      windDirectionDegrees: 235,
+    },
+  );
+  // The island edge needs a distinct translucent-looking shallow-water pigment.
+  expect(atmosphere.shallowWaterColor).toBeDefined();
+  expect(atmosphere.shallowWaterColor).not.toBe(atmosphere.waterColor);
+  // Several metres of optical blending should replace the current hard border.
+  expect(atmosphere.shoreBlendDistance).toBeGreaterThanOrEqual(1.5);
+  // Even calm weather needs fine normal movement and occasional subdued foam.
+  expect(atmosphere.microRippleStrength).toBeGreaterThan(0);
+  expect(atmosphere.shoreFoamIntensity).toBeGreaterThan(0);
+});
