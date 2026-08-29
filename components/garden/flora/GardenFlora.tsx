@@ -40,7 +40,7 @@ export function GardenFlora({
     <>
       {/* Convert each named initial-flower object into a Flower module instance. */}
       {INITIAL_FLOWERS.map(
-        ({ position, color, scale, petals, bell, memory }) => (
+        ({ position, color, scale, petals, layers, bell, memory }) => (
           <Flower
             key={memory.id}
             position={position}
@@ -50,6 +50,7 @@ export function GardenFlora({
             highlighted={targetedItemId === memory.id}
             scale={scale}
             petals={petals}
+            layers={layers}
             bell={bell}
           />
         ),
@@ -82,12 +83,13 @@ export function GardenFlora({
         ),
       )}
       {/* Render the named trees around the expanded walkable area. */}
-      {GARDEN_TREES.map(({ position, scale, item }) => (
+      {GARDEN_TREES.map(({ position, scale, item, visual }) => (
         <Tree
           key={item.id}
           position={position}
           scale={scale}
           item={item}
+          visual={visual}
           // Give the nearest targeted tree a soft canopy glow.
           highlighted={targetedItemId === item.id}
         />
