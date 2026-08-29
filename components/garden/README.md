@@ -28,7 +28,7 @@ flowchart LR
     Canvas --> World["GardenWorld<br/>scene composition"]
     Canvas --> Interaction["GardenInteraction<br/>raycasting + click/tap/E"]
 
-    World --> Terrain["terrain/<br/>ground + path + grass"]
+    World --> Terrain["terrain/<br/>island + coast + animated sea"]
     World --> Flora["flora/<br/>flowers + trees"]
     World --> Animals["animals/<br/>models + habitats + motion"]
     Routine["animals/behavior/<br/>variable phases + garden-wide destinations"] --> Animals
@@ -64,7 +64,7 @@ The most important boundaries are:
 | `interaction/` | Target registration, raycasting, and inspection UI |
 | `lighting/` | UK time, Sun, Moon, drifting clouds, and world shadow policy |
 | `navigation/` | First-person input, boundaries, and collision |
-| `terrain/` | Ground, path, grass rendering, and grass geometry |
+| `terrain/` | Organic island, sandy coast, animated sea, path, and grass rendering |
 | `weather/` | Open-Meteo mapping, resilient client refresh, and instanced rain |
 
 `Garden.tsx` and `GardenWorld.tsx` are composition modules. Feature implementation should remain in the responsibility folder that owns it.

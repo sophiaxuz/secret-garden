@@ -16,6 +16,8 @@ type SoundscapeGraph = {
   master: GainNode;
   // The looping source produces leaf-rustle texture.
   rustle: AudioBufferSourceNode;
+  // A second filtered source produces the slower rise and fall of distant surf.
+  surf: AudioBufferSourceNode;
   // Only one future chirp timeout is needed at a time.
   nextChirp: number | null;
 };
@@ -53,6 +55,12 @@ export const NatureSoundscape = forwardRef<
       // A source already stopped by the browser needs no additional recovery.
     }
     try {
+      // Stop the coastal wash alongside the rest of the garden soundscape.
+      graph.surf.stop();
+    } catch {
+      // A surf source already stopped during browser cleanup needs no second stop.
+    }
+    try {
       // Closing the context releases browser audio resources.
       void Promise.resolve(graph.context.close()).catch(() => undefined);
     } catch {
@@ -76,6 +84,7 @@ export const NatureSoundscape = forwardRef<
     // Track partially created resources so synchronous browser failures can unwind.
     let context: AudioContext | null = null;
     let rustle: AudioBufferSourceNode | null = null;
+    let surf: AudioBufferSourceNode | null = null;
     try {
       // Creating the context here satisfies strict user-gesture autoplay policies.
       const activeContext = new AudioContextClass();
@@ -110,11 +119,46 @@ export const NatureSoundscape = forwardRef<
       rustle.connect(rustleFilter).connect(rustleGain).connect(master);
       rustle.start();
 
+      // Fill a longer independent buffer with noise shaped into slow wave swells.
+      const surfBuffer = activeContext.createBuffer(
+        1,
+        activeContext.sampleRate * 8,
+        activeContext.sampleRate,
+      );
+      // Direct access lets the wave envelope become part of the loop itself.
+      const surfData = surfBuffer.getChannelData(0);
+      // Vary every sample while a broad envelope makes the sea breathe in and out.
+      for (let index = 0; index < surfData.length; index += 1) {
+        // Normalized position runs once through the complete eight-second wash.
+        const progress = index / surfData.length;
+        // Two offset swells avoid one mechanically symmetrical rise and fall.
+        const swell =
+          0.2 +
+          Math.sin(progress * Math.PI) ** 2 * 0.55 +
+          Math.sin(progress * Math.PI * 2 + 0.8) ** 2 * 0.25;
+        // Multiply broad-band noise by the gentle coastal amplitude envelope.
+        surfData[index] = (Math.random() * 2 - 1) * swell;
+      }
+      // Loop the shaped buffer continuously beneath birds and leaves.
+      surf = activeContext.createBufferSource();
+      surf.buffer = surfBuffer;
+      surf.loop = true;
+      // A strong low-pass removes white hiss and leaves a distant rolling wash.
+      const surfFilter = activeContext.createBiquadFilter();
+      surfFilter.type = "lowpass";
+      surfFilter.frequency.value = 520;
+      // Keep the sea audible at the edges of attention rather than dominating birds.
+      const surfGain = activeContext.createGain();
+      surfGain.gain.value = 0.13;
+      surf.connect(surfFilter).connect(surfGain).connect(master);
+      surf.start();
+
       // Store the graph before recursive chirp scheduling begins.
       const graph: SoundscapeGraph = {
         context: activeContext,
         master,
         rustle,
+        surf,
         nextChirp: null,
       };
       graphRef.current = graph;
@@ -181,6 +225,12 @@ export const NatureSoundscape = forwardRef<
         rustle?.stop();
       } catch {
         // A partially initialized source may reject stop without leaking playback.
+      }
+      try {
+        // Release a surf source created before graph ownership was established.
+        surf?.stop();
+      } catch {
+        // A partially initialized coastal source may already have stopped itself.
       }
       try {
         // Release a context created before the graph could take ownership.

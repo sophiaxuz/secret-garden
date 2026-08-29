@@ -5,9 +5,10 @@ const PLANTED_FLOWER_SIDES = 2;
 
 // Keep the garden's physical dimensions in one place so rendering and movement agree.
 export const GARDEN_LAYOUT = {
-  // The ground extends beyond the walking bounds, hiding its outer edges.
-  groundWidth: 180,
-  groundDepth: 180,
+  // The surrounding sea extends beyond the fog so its outer edge never appears.
+  seaSize: 180,
+  // A small drop keeps wave crests beneath the island's sandy shoreline.
+  seaLevel: -0.38,
   // The path leads from the entrance into the deepest part of the garden.
   pathWidth: 2.4,
   pathLength: 42,

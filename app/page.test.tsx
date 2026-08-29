@@ -35,11 +35,11 @@ function installTestAudioContext({ throwWhenPanning = false } = {}) {
     destination = {};
     // Gain nodes provide volume parameters and chainable graph connections.
     createGain = () => ({ gain: createAudioParam(), connect: connectToNext });
-    // The breeze source reads and fills one small writable channel.
+    // Both breeze and surf sources read and fill small writable channels.
     createBuffer = () => ({
       getChannelData: () => new Float32Array(4),
     });
-    // Starting this source is the earliest deterministic proof of audible playback.
+    // The shared spies observe both continuously looping natural-bed sources.
     createBufferSource = () => ({
       buffer: null,
       loop: false,
@@ -110,8 +110,8 @@ test("crossing the threshold starts the natural soundscape", async () => {
   await user.click(
     screen.getByRole("button", { name: /cross the threshold/i }),
   );
-  // The continuous natural bed should start without requiring a hidden second click.
-  expect(startRustle).toHaveBeenCalledOnce();
+  // Both leaf rustle and coastal wash start without requiring a hidden second click.
+  expect(startRustle).toHaveBeenCalledTimes(2);
   // The context must resume while the original user gesture is still active.
   expect(resumeAudio).toHaveBeenCalledOnce();
   // Successful resume should leave one truthful, keyboard-accessible mute control.
@@ -122,7 +122,7 @@ test("crossing the threshold starts the natural soundscape", async () => {
 
 // Protect garden entry when a browser exposes only part of the Web Audio API.
 test("an audio setup failure still enters and releases partial sound", async () => {
-  // Fail during the first bird phrase, after the continuous rustle has started.
+  // Fail during the first bird phrase, after both continuous beds have started.
   const { startRustle, stopRustle, closeAudio } = installTestAudioContext({
     throwWhenPanning: true,
   });
@@ -132,10 +132,10 @@ test("an audio setup failure still enters and releases partial sound", async () 
   await user.click(
     screen.getByRole("button", { name: /cross the threshold/i }),
   );
-  // The partial graph reached playback before the simulated browser failure.
-  expect(startRustle).toHaveBeenCalledOnce();
-  // Transactional cleanup stops the partial source and releases its context.
-  expect(stopRustle).toHaveBeenCalledOnce();
+  // The partial graph reached both playback beds before the simulated failure.
+  expect(startRustle).toHaveBeenCalledTimes(2);
+  // Transactional cleanup stops both sources and releases their shared context.
+  expect(stopRustle).toHaveBeenCalledTimes(2);
   expect(closeAudio).toHaveBeenCalledOnce();
   // Sound capability must never gate the visitor's core garden controls.
   expect(screen.getByRole("button", { name: /plant a memory/i })).toBeEnabled();
