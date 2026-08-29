@@ -80,6 +80,10 @@ Backend:
 - GLB/glTF plant archetypes
 - Procedural variation through React Three Fiber
 
+### Code architecture
+
+See the [garden architecture guide](components/garden/README.md) for the runtime diagram, module boundaries, and the path from visitor input to the 3D world and back to the HTML interface.
+
 ### Code quality
 - Everytime a feature is added, think about if there's any spagetti code. 
 - Focus on modularity, reusablity, DRY, clean code, readability!
