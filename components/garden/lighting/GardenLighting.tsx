@@ -1,9 +1,5 @@
 // Drei's atmospheric shader makes the sky respond to the calculated Sun.
 import { Sky } from "@react-three/drei";
-// Fiber exposes the renderer so exposure can follow the same live daylight value.
-import { useThree } from "@react-three/fiber";
-// React updates exposure before paint and remembers the renderer's original state.
-import { useEffect, useLayoutEffect, useRef } from "react";
 // The lighting component consumes the pure UK time calculation as its interface.
 import type { CelestialPosition, UkGardenTime } from "./uk-garden-time";
 // GardenClouds adds slow, light-responsive movement beneath the sky dome.
@@ -62,24 +58,6 @@ function CelestialLight({
 
 // Render a Sun by day, a Moon by night, and continuous twilight between them.
 export function GardenLighting({ time }: GardenLightingProps) {
-  // Access the existing Canvas renderer rather than creating another WebGL context.
-  const renderer = useThree((state) => state.gl);
-  // Capture the pre-garden exposure so unmounting cannot leak renderer state.
-  const originalExposure = useRef(renderer.toneMappingExposure);
-  // Apply the calculated real-time exposure whenever daylight strength changes.
-  useLayoutEffect(() => {
-    // ACES keeps bright sunlight filmic while preserving colour in the highlights.
-    renderer.toneMappingExposure = time.rendererExposure;
-  }, [renderer, time.rendererExposure]);
-  // Restore the renderer if this atmosphere is ever removed before its Canvas.
-  useEffect(() => {
-    // Copy the initial value so cleanup does not depend on a later ref mutation.
-    const exposureBeforeGarden = originalExposure.current;
-    // Cleanup returns ownership of exposure to whichever scene mounted the garden.
-    return () => {
-      renderer.toneMappingExposure = exposureBeforeGarden;
-    };
-  }, [renderer]);
   // Only the dominant celestial light needs an expensive shadow map at once.
   const sunCastsShadow =
     time.sunIntensity >= time.moonIntensity && time.sunIntensity > 0.03;
@@ -98,10 +76,8 @@ export function GardenLighting({ time }: GardenLightingProps) {
       <Sky
         distance={450000}
         sunPosition={time.sunPosition}
-        turbidity={time.phase === "day" ? 4.2 : 10}
-        rayleigh={time.phase === "day" ? 1.7 : 1.1}
-        mieCoefficient={time.phase === "day" ? 0.004 : 0.007}
-        mieDirectionalG={0.82}
+        turbidity={time.phase === "day" ? 7 : 10}
+        rayleigh={time.phase === "day" ? 2.2 : 1.1}
       />
       {/* Let broad cloud banks drift through the current UK light phase. */}
       <GardenClouds phase={time.phase} />

@@ -46,7 +46,6 @@ test("moonlight replaces sunlight during a UK night", () => {
   expect(night.moonPosition[1]).toBeGreaterThan(0);
   // Moonlight becomes the dominant directional light once daylight has disappeared.
   expect(night.moonIntensity).toBeGreaterThan(night.sunIntensity);
-  // Daytime improvements must not dim or recolour the established night rendering.
-  expect(night.rendererExposure).toBe(1);
+  // Daytime improvements must not recolour the established night rendering.
   expect(night.hemisphereGroundColor).toBe("#17251e");
 });

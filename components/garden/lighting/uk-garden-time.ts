@@ -38,7 +38,6 @@ export type UkGardenTime = {
   moonIntensity: number;
   hemisphereIntensity: number;
   environmentIntensity: number;
-  rendererExposure: number;
   // Colors coordinate the background, fog, atmosphere, and directional lights.
   skyColor: string;
   fogColor: string;
@@ -294,7 +293,6 @@ export function getUkGardenTime(instant: Date): UkGardenTime {
     moonIntensity: 0.3 * moonlight,
     hemisphereIntensity: 0.16 + 1.14 * daylight + 0.08 * moonlight,
     environmentIntensity: 0.08 + 0.94 * daylight + 0.06 * moonlight,
-    rendererExposure: 1 + 0.12 * daylight,
     skyColor,
     fogColor,
     hemisphereColor,
