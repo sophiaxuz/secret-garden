@@ -25,6 +25,8 @@ import { getSquirrelMotion, SQUIRREL_CYCLE_SECONDS } from "./squirrel-motion";
 
 // This stable pose supplies both the initial render and reduced-motion fallback.
 const SQUIRREL_REST_POSE = getSquirrelMotion(0);
+// The middle of the tested perch phase gives Hazel a safe branch-top night home.
+const SQUIRREL_NIGHT_POSE = getSquirrelMotion(12);
 // Preserve the safe climb sequence while varying its complete pace each cycle.
 const SQUIRREL_ROUTINE = [
   { name: "journey", minDuration: 44, maxDuration: 68 },
@@ -32,6 +34,7 @@ const SQUIRREL_ROUTINE = [
 // Build a small squirrel pausing near the edge of the path.
 export function Squirrel({
   animated = true,
+  sleeping = false,
   item,
   highlighted = false,
 }: AnimatedAnimalProps) {
@@ -72,6 +75,60 @@ export function Squirrel({
       !rightPaw.current
     )
       return;
+    // Night keeps Hazel safely curled on the real branch she already climbs.
+    if (sleeping) {
+      // Reduced motion reaches the branch pose in one frame and removes breathing.
+      const restDelta = animated ? delta : 10;
+      // Approach each tested perch coordinate gently instead of snapping into the tree.
+      squirrel.current.position.x = THREE.MathUtils.damp(
+        squirrel.current.position.x,
+        SQUIRREL_NIGHT_POSE.position[0],
+        0.9,
+        restDelta,
+      );
+      squirrel.current.position.y = THREE.MathUtils.damp(
+        squirrel.current.position.y,
+        SQUIRREL_NIGHT_POSE.position[1] +
+          (animated ? Math.sin(clock.elapsedTime * 1.12) * 0.012 : 0),
+        0.9,
+        restDelta,
+      );
+      squirrel.current.position.z = THREE.MathUtils.damp(
+        squirrel.current.position.z,
+        SQUIRREL_NIGHT_POSE.position[2],
+        0.9,
+        restDelta,
+      );
+      // Face along the supporting branch and curl the body slightly inward.
+      squirrel.current.rotation.x = THREE.MathUtils.damp(
+        squirrel.current.rotation.x,
+        0.18,
+        3,
+        restDelta,
+      );
+      squirrel.current.rotation.y = THREE.MathUtils.damp(
+        squirrel.current.rotation.y,
+        SQUIRREL_NIGHT_POSE.heading,
+        2,
+        restDelta,
+      );
+      squirrel.current.rotation.z = THREE.MathUtils.damp(
+        squirrel.current.rotation.z,
+        0.28,
+        3,
+        restDelta,
+      );
+      // Fold the large tail over the body and bring both paws together.
+      tail.current.rotation.z = THREE.MathUtils.damp(
+        tail.current.rotation.z,
+        -1.12,
+        4,
+        restDelta,
+      );
+      leftPaw.current.rotation.x = 0.72;
+      rightPaw.current.rotation.x = 0.72;
+      return;
+    }
     // Return to a stable grounded pose if reduced motion is enabled live.
     if (!animated) {
       squirrel.current.position.set(...SQUIRREL_REST_POSE.position);
@@ -87,6 +144,13 @@ export function Squirrel({
     }
     // Stretch or compress the complete safe journey with a newly chosen duration.
     const behavior = behaviorRoutine.advance(delta);
+    // Uncurl smoothly after dawn before ordinary climbing movement resumes.
+    squirrel.current.rotation.z = THREE.MathUtils.damp(
+      squirrel.current.rotation.z,
+      0,
+      3,
+      delta,
+    );
     // End each tree visit at a new patch that becomes the next journey's beginning.
     const startPoint = roamingRoute.point(behavior.cycleIndex);
     const endPoint = roamingRoute.point(behavior.cycleIndex + 1);
@@ -176,20 +240,20 @@ export function Squirrel({
         <meshStandardMaterial color="#c2a17a" roughness={1} />
       </mesh>
       {/* Two dark eyes sit on the forward-facing side of the head. */}
-      <mesh position={[-0.145, 0.64, 0.68]}>
+      <mesh position={[-0.145, 0.64, 0.68]} scale={[1, sleeping ? 0.12 : 1, 1]}>
         <sphereGeometry args={[0.07, 12, 8]} />
         <meshStandardMaterial color="#171714" roughness={0.35} />
       </mesh>
-      <mesh position={[0.145, 0.64, 0.68]}>
+      <mesh position={[0.145, 0.64, 0.68]} scale={[1, sleeping ? 0.12 : 1, 1]}>
         <sphereGeometry args={[0.07, 12, 8]} />
         <meshStandardMaterial color="#171714" roughness={0.35} />
       </mesh>
       {/* Tiny highlights keep the black eyes readable in shadow. */}
-      <mesh position={[-0.167, 0.665, 0.738]}>
+      <mesh position={[-0.167, 0.665, 0.738]} visible={!sleeping}>
         <sphereGeometry args={[0.018, 8, 6]} />
         <meshBasicMaterial color="#fff7df" />
       </mesh>
-      <mesh position={[0.123, 0.665, 0.738]}>
+      <mesh position={[0.123, 0.665, 0.738]} visible={!sleeping}>
         <sphereGeometry args={[0.018, 8, 6]} />
         <meshBasicMaterial color="#fff7df" />
       </mesh>

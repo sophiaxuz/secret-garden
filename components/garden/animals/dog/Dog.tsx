@@ -41,6 +41,7 @@ type DogRoutineName = (typeof DOG_ROUTINE)[number]["name"];
 // Build a friendly garden dog that sniffs, strolls, watches, and wags.
 export function Dog({
   animated = true,
+  sleeping = false,
   item,
   highlighted = false,
 }: AnimatedAnimalProps) {
@@ -98,6 +99,48 @@ export function Dog({
       !backRightLeg.current
     )
       return;
+    // Night replaces roaming with a slowly settled, side-lying sleep pose.
+    if (sleeping) {
+      // Reduced motion settles in one frame and removes the breathing oscillation.
+      const restDelta = animated ? delta : 10;
+      // Ease home so nightfall never teleports Moss across the meadow.
+      dog.current.position.lerp(DOG_HOME, 1 - Math.exp(-restDelta * 0.75));
+      // Roll the complete silhouette onto one side while keeping it above ground.
+      dog.current.rotation.x = THREE.MathUtils.damp(
+        dog.current.rotation.x,
+        0.08,
+        3,
+        restDelta,
+      );
+      dog.current.rotation.y = THREE.MathUtils.damp(
+        dog.current.rotation.y,
+        -0.45,
+        2,
+        restDelta,
+      );
+      dog.current.rotation.z = THREE.MathUtils.damp(
+        dog.current.rotation.z,
+        -1.02,
+        3,
+        restDelta,
+      );
+      // A tiny head rise and fall reads as slow sleeping breath.
+      head.current.rotation.x =
+        -0.18 + (animated ? Math.sin(clock.elapsedTime * 1.15) * 0.025 : 0);
+      head.current.rotation.y = 0;
+      // A still tail and folded legs distinguish sleep from a daytime pause.
+      tail.current.rotation.z = THREE.MathUtils.damp(
+        tail.current.rotation.z,
+        -0.08,
+        4,
+        restDelta,
+      );
+      frontLeftLeg.current.rotation.x = 1.15;
+      frontRightLeg.current.rotation.x = 1.05;
+      backLeftLeg.current.rotation.x = -1.05;
+      backRightLeg.current.rotation.x = -1.15;
+      return;
+    }
     // Reset to a friendly standing pose for reduced-motion visitors.
     if (!animated) {
       dog.current.position.copy(DOG_HOME);
@@ -110,6 +153,20 @@ export function Dog({
       backRightLeg.current.rotation.x = 0;
       return;
     }
+
+    // Stand upright gradually when dawn resumes the ordinary roaming routine.
+    dog.current.rotation.x = THREE.MathUtils.damp(
+      dog.current.rotation.x,
+      0,
+      3,
+      delta,
+    );
+    dog.current.rotation.z = THREE.MathUtils.damp(
+      dog.current.rotation.z,
+      0,
+      3,
+      delta,
+    );
 
     // Advance the variable routine and reuse its phase-local time for small motions.
     const behavior = behaviorRoutine.advance(delta);
@@ -235,7 +292,7 @@ export function Dog({
         size={[3, 3, 4]}
         highlighted={highlighted}
       />
-      <DogModel rig={rig} />
+      <DogModel rig={rig} sleeping={sleeping} />
     </group>
   );
 }

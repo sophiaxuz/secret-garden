@@ -36,6 +36,12 @@ const ROBIN_HOME = createHabitatVector(ANIMAL_HABITATS.robin.groundStart);
 const ROBIN_PERCHES = ROBIN_TREE_PERCHES.map(
   (position) => new THREE.Vector3(...position),
 );
+// The body centre rests just above the permanent nest's woven base at night.
+const ROBIN_SLEEP_HOME = new THREE.Vector3(
+  ROBIN_NEST_POSITION[0],
+  ROBIN_NEST_POSITION[1] + 0.18,
+  ROBIN_NEST_POSITION[2],
+);
 
 // The wide perch range makes each sudden takeoff difficult to anticipate exactly.
 const ROBIN_ROUTINE = [
@@ -68,6 +74,7 @@ function flyBetween(
 // Build a stylized European robin with a repeating natural behavior cycle.
 export function Robin({
   animated = true,
+  sleeping = false,
   item,
   highlighted = false,
 }: AnimatedAnimalProps) {
@@ -110,17 +117,81 @@ export function Robin({
       !rightWing.current
     )
       return;
+    // Night sends Pip back to the permanent nest before he tucks his head down.
+    if (sleeping) {
+      // Reduced motion reaches the nest in one frame and keeps both wings still.
+      const restDelta = animated ? delta : 10;
+      // Measure distance first so the wings can remain active during the home flight.
+      const distanceToNest =
+        robin.current.position.distanceTo(ROBIN_SLEEP_HOME);
+      // Ease across the garden rather than teleporting from the current daytime perch.
+      robin.current.position.lerp(
+        ROBIN_SLEEP_HOME,
+        1 - Math.exp(-restDelta * 0.78),
+      );
+      // Face the home tree while approaching and settle into the nest's direction.
+      robin.current.rotation.x = THREE.MathUtils.damp(
+        robin.current.rotation.x,
+        0.05,
+        3,
+        restDelta,
+      );
+      robin.current.rotation.y = THREE.MathUtils.damp(
+        robin.current.rotation.y,
+        -1.15,
+        2,
+        restDelta,
+      );
+      robin.current.rotation.z = 0;
+      // Tuck the head only after the body is close enough to be supported by the nest.
+      head.current.rotation.x = THREE.MathUtils.damp(
+        head.current.rotation.x,
+        distanceToNest < 0.3 ? 0.38 : 0,
+        4,
+        restDelta,
+      );
+      head.current.rotation.y = 0;
+      head.current.rotation.z = 0;
+      // Flap during the homeward glide, then fold both wings for sleep.
+      const homeFlight = animated
+        ? THREE.MathUtils.smoothstep(distanceToNest, 0.12, 2.4)
+        : 0;
+      const flap = Math.sin(clock.elapsedTime * 15) * 0.55 * homeFlight;
+      leftWing.current.rotation.z = 0.43 + flap;
+      rightWing.current.rotation.z = -0.43 - flap;
+      return;
+    }
     // Return to a grounded resting pose if reduced motion is enabled live.
     if (!animated) {
       robin.current.position.copy(ROBIN_HOME);
       robin.current.rotation.set(0, 0.2, 0);
-      head.current.rotation.y = 0;
+      head.current.rotation.set(0, 0, 0);
       leftWing.current.rotation.z = 0.43;
       rightWing.current.rotation.z = -0.43;
       return;
     }
+    // Level the complete bird as the daytime route resumes after nesting.
+    robin.current.rotation.x = THREE.MathUtils.damp(
+      robin.current.rotation.x,
+      0,
+      4,
+      delta,
+    );
+    robin.current.rotation.z = THREE.MathUtils.damp(
+      robin.current.rotation.z,
+      0,
+      4,
+      delta,
+    );
     // Advance the robin's current variable-duration decision.
     const behavior = behaviorRoutine.advance(delta);
+    // Lift the head smoothly when dawn begins after a night in the nest.
+    head.current.rotation.x = THREE.MathUtils.damp(
+      head.current.rotation.x,
+      0,
+      4,
+      delta,
+    );
     const phaseTime = behavior.phaseTime;
     // Two ground points and one real branch define this cycle's connected journey.
     const firstIndex = behavior.cycleIndex * 2;
@@ -255,11 +326,14 @@ export function Robin({
             <sphereGeometry args={[0.38, 18, 12]} />
             <meshStandardMaterial color="#574237" roughness={0.95} />
           </mesh>
-          <mesh position={[-0.2, 0.1, 0.27]}>
+          <mesh
+            position={[-0.2, 0.1, 0.27]}
+            scale={[1, sleeping ? 0.12 : 1, 1]}
+          >
             <sphereGeometry args={[0.045, 8, 6]} />
             <meshBasicMaterial color="#0e1110" />
           </mesh>
-          <mesh position={[0.2, 0.1, 0.27]}>
+          <mesh position={[0.2, 0.1, 0.27]} scale={[1, sleeping ? 0.12 : 1, 1]}>
             <sphereGeometry args={[0.045, 8, 6]} />
             <meshBasicMaterial color="#0e1110" />
           </mesh>

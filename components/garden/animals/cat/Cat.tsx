@@ -41,6 +41,7 @@ type CatRoutineName = (typeof CAT_ROUTINE)[number]["name"];
 // Build a grey tabby that watches, prowls, pauses, and wanders onward.
 export function Cat({
   animated = true,
+  sleeping = false,
   item,
   highlighted = false,
 }: AnimatedAnimalProps) {
@@ -105,6 +106,68 @@ export function Cat({
       !rightHindLeg.current
     )
       return;
+    // Night draws Mallow home and folds her into a compact curled sleep pose.
+    if (sleeping) {
+      // Reduced motion reaches the still curled pose immediately without breathing.
+      const restDelta = animated ? delta : 10;
+      // Ease toward the quiet home patch instead of abruptly changing location.
+      cat.current.position.lerp(CAT_HOME, 1 - Math.exp(-restDelta * 0.68));
+      // Keep the root grounded while the internal body performs the curl.
+      cat.current.rotation.x = THREE.MathUtils.damp(
+        cat.current.rotation.x,
+        0.04,
+        4,
+        restDelta,
+      );
+      cat.current.rotation.y = THREE.MathUtils.damp(
+        cat.current.rotation.y,
+        0.7,
+        2,
+        restDelta,
+      );
+      cat.current.rotation.z = THREE.MathUtils.damp(
+        cat.current.rotation.z,
+        0.12,
+        4,
+        restDelta,
+      );
+      // Lower and round the torso with a tiny breathing movement.
+      body.current.position.y =
+        -0.08 + (animated ? Math.sin(clock.elapsedTime * 1.05) * 0.012 : 0);
+      body.current.rotation.x = THREE.MathUtils.damp(
+        body.current.rotation.x,
+        -0.58,
+        4,
+        restDelta,
+      );
+      // Tuck the chin toward the chest and stop daytime scanning.
+      head.current.rotation.x = THREE.MathUtils.damp(
+        head.current.rotation.x,
+        0.36,
+        4,
+        restDelta,
+      );
+      head.current.rotation.y = 0;
+      // Wrap both tail sections around the sleeping body.
+      tail.current.rotation.z = THREE.MathUtils.damp(
+        tail.current.rotation.z,
+        1.08,
+        4,
+        restDelta,
+      );
+      tailTip.current.rotation.z = THREE.MathUtils.damp(
+        tailTip.current.rotation.z,
+        1.02,
+        4,
+        restDelta,
+      );
+      // Fold all four paws rather than leaving a standing silhouette.
+      leftPaw.current.rotation.x = 1.08;
+      rightPaw.current.rotation.x = 1.08;
+      leftHindLeg.current.rotation.x = 1.2;
+      rightHindLeg.current.rotation.x = 1.2;
+      return;
+    }
     // Return to a composed standing pose when motion should be reduced.
     if (!animated) {
       cat.current.position.copy(CAT_HOME);
@@ -120,6 +183,20 @@ export function Cat({
       rightHindLeg.current.rotation.x = 0;
       return;
     }
+
+    // Uncurl the root and chin smoothly when Mallow wakes at dawn.
+    cat.current.rotation.z = THREE.MathUtils.damp(
+      cat.current.rotation.z,
+      0,
+      3,
+      delta,
+    );
+    head.current.rotation.x = THREE.MathUtils.damp(
+      head.current.rotation.x,
+      0,
+      4,
+      delta,
+    );
 
     // Advance the current unpredictable decision by this rendered frame.
     const behavior = behaviorRoutine.advance(delta);
@@ -274,7 +351,7 @@ export function Cat({
         size={[3, 3, 4]}
         highlighted={highlighted}
       />
-      <CatModel rig={rig} />
+      <CatModel rig={rig} sleeping={sleeping} />
     </group>
   );
 }

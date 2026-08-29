@@ -16,7 +16,15 @@ export type CatRig = {
 };
 
 // Render only the cat's appearance while Cat owns its behavior and route.
-export function CatModel({ rig }: { rig: CatRig }) {
+export function CatModel({
+  rig,
+  sleeping,
+}: {
+  // Rig exposes the movable body parts owned by Cat's behaviour module.
+  rig: CatRig;
+  // Sleeping closes the existing eye geometry without adding extra meshes.
+  sleeping: boolean;
+}) {
   // A fragment lets the parent root group transform every model part together.
   return (
     <>
@@ -49,20 +57,34 @@ export function CatModel({ rig }: { rig: CatRig }) {
             <meshStandardMaterial color="#686a66" roughness={1} />
           </mesh>
           {/* Green eyes stand out against the grey face. */}
-          <mesh position={[-0.2, 0.08, 0.36]} scale={[1.15, 0.82, 0.72]}>
+          <mesh
+            position={[-0.2, 0.08, 0.36]}
+            scale={[1.15, sleeping ? 0.1 : 0.82, 0.72]}
+          >
             <sphereGeometry args={[0.075, 10, 7]} />
             <meshStandardMaterial color="#a8bf73" roughness={0.35} />
           </mesh>
-          <mesh position={[0.2, 0.08, 0.36]} scale={[1.15, 0.82, 0.72]}>
+          <mesh
+            position={[0.2, 0.08, 0.36]}
+            scale={[1.15, sleeping ? 0.1 : 0.82, 0.72]}
+          >
             <sphereGeometry args={[0.075, 10, 7]} />
             <meshStandardMaterial color="#a8bf73" roughness={0.35} />
           </mesh>
           {/* Narrow pupils make the green eyes read clearly as feline. */}
-          <mesh position={[-0.2, 0.08, 0.42]} scale={[0.32, 1, 0.3]}>
+          <mesh
+            position={[-0.2, 0.08, 0.42]}
+            scale={[0.32, 1, 0.3]}
+            visible={!sleeping}
+          >
             <sphereGeometry args={[0.045, 8, 6]} />
             <meshBasicMaterial color="#171916" />
           </mesh>
-          <mesh position={[0.2, 0.08, 0.42]} scale={[0.32, 1, 0.3]}>
+          <mesh
+            position={[0.2, 0.08, 0.42]}
+            scale={[0.32, 1, 0.3]}
+            visible={!sleeping}
+          >
             <sphereGeometry args={[0.045, 8, 6]} />
             <meshBasicMaterial color="#171916" />
           </mesh>

@@ -11,7 +11,15 @@ export type RabbitRig = {
 };
 
 // Render only the rabbit's soft low-poly appearance.
-export function RabbitModel({ rig }: { rig: RabbitRig }) {
+export function RabbitModel({
+  rig,
+  sleeping,
+}: {
+  // Rig exposes the head and ears animated by Rabbit.
+  rig: RabbitRig;
+  // Sleeping flattens the existing dark eyes into closed eyelids.
+  sleeping: boolean;
+}) {
   // A fragment lets Rabbit's root group move the entire model as one animal.
   return (
     <>
@@ -61,11 +69,14 @@ export function RabbitModel({ rig }: { rig: RabbitRig }) {
           <meshStandardMaterial color="#9d846e" roughness={1} />
         </mesh>
         {/* Dark glossy eyes sit on the forward-facing side. */}
-        <mesh position={[-0.22, 0.09, 0.36]}>
+        <mesh
+          position={[-0.22, 0.09, 0.36]}
+          scale={[1, sleeping ? 0.12 : 1, 1]}
+        >
           <sphereGeometry args={[0.065, 10, 7]} />
           <meshStandardMaterial color="#171614" roughness={0.25} />
         </mesh>
-        <mesh position={[0.22, 0.09, 0.36]}>
+        <mesh position={[0.22, 0.09, 0.36]} scale={[1, sleeping ? 0.12 : 1, 1]}>
           <sphereGeometry args={[0.065, 10, 7]} />
           <meshStandardMaterial color="#171614" roughness={0.25} />
         </mesh>

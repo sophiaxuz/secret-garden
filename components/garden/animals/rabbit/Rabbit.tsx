@@ -40,6 +40,7 @@ type RabbitRoutineName = (typeof RABBIT_ROUTINE)[number]["name"];
 // Build a little garden rabbit that nibbles, listens, and bounds through grass.
 export function Rabbit({
   animated = true,
+  sleeping = false,
   item,
   highlighted = false,
 }: AnimatedAnimalProps) {
@@ -82,15 +83,78 @@ export function Rabbit({
       !rightEar.current
     )
       return;
+    // Night returns Clover to a low, tucked sleeping posture in the grass.
+    if (sleeping) {
+      // Reduced motion reaches the still crouch immediately and skips breathing.
+      const restDelta = animated ? delta : 10;
+      // Ease back to the familiar feeding patch without a visible teleport.
+      rabbit.current.position.lerp(
+        RABBIT_HOME,
+        1 - Math.exp(-restDelta * 0.72),
+      );
+      // Keep the body low and still while the face rests against the forepaws.
+      rabbit.current.rotation.x = THREE.MathUtils.damp(
+        rabbit.current.rotation.x,
+        0.1,
+        4,
+        restDelta,
+      );
+      rabbit.current.rotation.y = THREE.MathUtils.damp(
+        rabbit.current.rotation.y,
+        -0.3,
+        2,
+        restDelta,
+      );
+      rabbit.current.rotation.z = 0;
+      // Slow breathing moves only the tucked head by a few millimetres.
+      head.current.rotation.x =
+        0.48 + (animated ? Math.sin(clock.elapsedTime * 1.08) * 0.018 : 0);
+      // Lay both long ears back so the silhouette no longer reads as alert.
+      leftEar.current.rotation.x = THREE.MathUtils.damp(
+        leftEar.current.rotation.x,
+        1.05,
+        4,
+        restDelta,
+      );
+      rightEar.current.rotation.x = THREE.MathUtils.damp(
+        rightEar.current.rotation.x,
+        1.0,
+        4,
+        restDelta,
+      );
+      leftEar.current.rotation.z = 0.16;
+      rightEar.current.rotation.z = -0.16;
+      return;
+    }
     // Use a calm grounded pose when reduced motion is requested.
     if (!animated) {
       rabbit.current.position.copy(RABBIT_HOME);
       rabbit.current.rotation.set(0, 0, 0);
       head.current.rotation.set(0.12, 0, 0);
-      leftEar.current.rotation.z = 0.08;
-      rightEar.current.rotation.z = -0.08;
+      leftEar.current.rotation.set(0.08, 0, 0.08);
+      rightEar.current.rotation.set(-0.04, 0, -0.08);
       return;
     }
+
+    // Raise both ears and level the body as dawn restarts the foraging routine.
+    rabbit.current.rotation.z = THREE.MathUtils.damp(
+      rabbit.current.rotation.z,
+      0,
+      4,
+      delta,
+    );
+    leftEar.current.rotation.x = THREE.MathUtils.damp(
+      leftEar.current.rotation.x,
+      0.08,
+      4,
+      delta,
+    );
+    rightEar.current.rotation.x = THREE.MathUtils.damp(
+      rightEar.current.rotation.x,
+      -0.04,
+      4,
+      delta,
+    );
 
     // Advance one variable-duration phase while preserving frame-rate independence.
     const behavior = behaviorRoutine.advance(delta);
@@ -205,7 +269,7 @@ export function Rabbit({
         size={[2.5, 2.8, 3]}
         highlighted={highlighted}
       />
-      <RabbitModel rig={rig} />
+      <RabbitModel rig={rig} sleeping={sleeping} />
     </group>
   );
 }

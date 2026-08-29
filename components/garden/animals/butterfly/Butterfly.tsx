@@ -37,6 +37,7 @@ const BUTTERFLY_ROUTINE = [
 // Build a lightweight butterfly from a body and four moving wings.
 export function Butterfly({
   animated = true,
+  sleeping = false,
   color,
   origin,
   phase = 0,
@@ -69,14 +70,67 @@ export function Butterfly({
   useFrame(({ clock }, delta) => {
     // Stop until React has connected all refs to Three.js objects.
     if (!butterfly.current || !leftWing.current || !rightWing.current) return;
+    // Night brings each butterfly down into the plants with both wings folded.
+    if (sleeping) {
+      // Reduced motion completes this one-time settling pose without a glide.
+      const restDelta = animated ? delta : 10;
+      // Reuse the authored habitat horizontally and settle among the grass below it.
+      const restHeight = Math.max(0.48, origin[1] - 0.72);
+      butterfly.current.position.x = THREE.MathUtils.damp(
+        butterfly.current.position.x,
+        origin[0],
+        1.2,
+        restDelta,
+      );
+      butterfly.current.position.y = THREE.MathUtils.damp(
+        butterfly.current.position.y,
+        restHeight,
+        1.1,
+        restDelta,
+      );
+      butterfly.current.position.z = THREE.MathUtils.damp(
+        butterfly.current.position.z,
+        origin[2],
+        1.2,
+        restDelta,
+      );
+      // Tip the body toward a stem and close both wing pairs nearly together.
+      butterfly.current.rotation.x = THREE.MathUtils.damp(
+        butterfly.current.rotation.x,
+        0.38,
+        3,
+        restDelta,
+      );
+      butterfly.current.rotation.y = phase * 0.37;
+      leftWing.current.rotation.y = THREE.MathUtils.damp(
+        leftWing.current.rotation.y,
+        1.42,
+        4,
+        restDelta,
+      );
+      rightWing.current.rotation.y = THREE.MathUtils.damp(
+        rightWing.current.rotation.y,
+        -1.42,
+        4,
+        restDelta,
+      );
+      return;
+    }
     // Keep each butterfly calmly resting at its own origin for reduced motion.
     if (!animated) {
       butterfly.current.position.set(origin[0], origin[1], origin[2]);
-      butterfly.current.rotation.y = 0;
+      butterfly.current.rotation.set(0, 0, 0);
       leftWing.current.rotation.y = 0;
       rightWing.current.rotation.y = 0;
       return;
     }
+    // Reopen the body angle smoothly when the first dawn flight begins.
+    butterfly.current.rotation.x = THREE.MathUtils.damp(
+      butterfly.current.rotation.x,
+      0,
+      3,
+      delta,
+    );
     // Advance one variable-duration flight toward the next distant destination.
     const behavior = behaviorRoutine.advance(delta);
     // Each completed flight continues from its old endpoint to a fresh route point.
