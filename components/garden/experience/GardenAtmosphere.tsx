@@ -8,10 +8,6 @@ export function GardenAtmosphere() {
       <div className="grain" />
       {/* This quiet label names the place while the live clock supplies time. */}
       <div className="garden-name">The Secret Garden</div>
-      {/* The dot marks the center of the first-person view on desktop. */}
-      <div className="reticle" aria-hidden="true">
-        ·
-      </div>
     </>
   );
 }

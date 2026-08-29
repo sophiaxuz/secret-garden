@@ -11,10 +11,10 @@ type GardenVisitControlsProps = {
 };
 
 // Convert a held mobile button into the keyboard events used by navigation.
-function walk(code: "KeyW" | "KeyS", pressed: boolean) {
-  // Send keydown while held and keyup when released.
+function walkForward(pressed: boolean) {
+  // Send a W keydown while held and keyup when released.
   window.dispatchEvent(
-    new KeyboardEvent(pressed ? "keydown" : "keyup", { code }),
+    new KeyboardEvent(pressed ? "keydown" : "keyup", { code: "KeyW" }),
   );
 }
 
@@ -48,15 +48,20 @@ export function GardenVisitControls({
         </span>
       </div>
 
+      {/* The dot marks the center of the first-person interaction view. */}
+      <div className="reticle" aria-hidden="true">
+        ·
+      </div>
+
       {/* Holding this mobile-only button dispatches forward movement. */}
       <button
         className="walk-control"
         aria-label="Walk forward"
         // Keep the hidden movement control out of keyboard navigation before entry.
         disabled={!entered}
-        onPointerDown={() => walk("KeyW", true)}
-        onPointerUp={() => walk("KeyW", false)}
-        onPointerCancel={() => walk("KeyW", false)}
+        onPointerDown={() => walkForward(true)}
+        onPointerUp={() => walkForward(false)}
+        onPointerCancel={() => walkForward(false)}
       >
         ↑<small>walk</small>
       </button>
