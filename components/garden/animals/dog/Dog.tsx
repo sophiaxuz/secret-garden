@@ -27,18 +27,18 @@ import { DogModel, type DogRig } from "./DogModel";
 // The authored western habitat remains the dog's stable first rendered position.
 const DOG_HOME = createHabitatVector(ANIMAL_HABITATS.dog.start);
 
-// Ranges preserve the dog's story while removing the fixed twenty-four-second loop.
+// Long travel ranges give the dog time to cross the expanded garden calmly.
 const DOG_ROUTINE = [
-  { name: "sniffing", minDuration: 2.5, maxDuration: 7 },
-  { name: "wandering", minDuration: 5.5, maxDuration: 11 },
-  { name: "watching", minDuration: 2.5, maxDuration: 8 },
-  { name: "exploring", minDuration: 5.5, maxDuration: 11 },
-  { name: "resting", minDuration: 1.5, maxDuration: 5 },
+  { name: "sniffing", minDuration: 4, maxDuration: 10 },
+  { name: "wandering", minDuration: 14, maxDuration: 24 },
+  { name: "watching", minDuration: 4, maxDuration: 11 },
+  { name: "exploring", minDuration: 14, maxDuration: 24 },
+  { name: "resting", minDuration: 3, maxDuration: 8 },
 ] as const;
 // Derive the phase-name union so behavior code cannot misspell a routine phase.
 type DogRoutineName = (typeof DOG_ROUTINE)[number]["name"];
 
-// Build a friendly garden dog that sniffs, trots, watches, and wags.
+// Build a friendly garden dog that sniffs, strolls, watches, and wags.
 export function Dog({
   animated = true,
   item,
@@ -146,8 +146,11 @@ export function Dog({
         progress,
         behavior.variation * 1.4,
       );
+      // Keep individual steps lively even though the overall journey is leisurely.
       dog.current.position.y +=
-        Math.abs(Math.sin(progress * Math.PI * 8)) * 0.07;
+        Math.abs(Math.sin(phaseTime * 4.8)) *
+        Math.sin(progress * Math.PI) *
+        0.07;
       desiredHeading = roamingRoute.heading(firstIndex, middleIndex);
       gaitEnergy = Math.sin(progress * Math.PI);
     } else if (behavior.phase === "watching") {
@@ -169,7 +172,9 @@ export function Dog({
         behavior.variation * 1.4,
       );
       dog.current.position.y +=
-        Math.abs(Math.sin(progress * Math.PI * 8)) * 0.07;
+        Math.abs(Math.sin(phaseTime * 4.8)) *
+        Math.sin(progress * Math.PI) *
+        0.07;
       desiredHeading = roamingRoute.heading(middleIndex, finalIndex);
       gaitEnergy = Math.sin(progress * Math.PI);
     } else {

@@ -27,12 +27,12 @@ import { RabbitModel, type RabbitRig } from "./RabbitModel";
 // The authored sunny habitat remains the rabbit's first rendered feeding patch.
 const RABBIT_HOME = createHabitatVector(ANIMAL_HABITATS.rabbit.start);
 
-// Wide listening ranges make an abrupt bound feel like a genuine surprise.
+// Long journeys and wide listening ranges balance calmness with sudden bounds.
 const RABBIT_ROUTINE = [
-  { name: "nibbling", minDuration: 2, maxDuration: 7 },
-  { name: "bounding", minDuration: 4.5, maxDuration: 8 },
-  { name: "listening", minDuration: 2, maxDuration: 8 },
-  { name: "darting", minDuration: 4.5, maxDuration: 8 },
+  { name: "nibbling", minDuration: 4, maxDuration: 10 },
+  { name: "bounding", minDuration: 10, maxDuration: 18 },
+  { name: "listening", minDuration: 4, maxDuration: 11 },
+  { name: "darting", minDuration: 10, maxDuration: 18 },
 ] as const;
 // Derive valid names directly from the species schedule.
 type RabbitRoutineName = (typeof RABBIT_ROUTINE)[number]["name"];
@@ -126,8 +126,11 @@ export function Rabbit({
         progress,
         behavior.variation * 1.25,
       );
+      // Repeat compact bounds at a natural cadence throughout the slower journey.
       rabbit.current.position.y +=
-        Math.abs(Math.sin(progress * Math.PI * 5)) * 0.24;
+        Math.abs(Math.sin(phaseTime * 3.8)) *
+        Math.sin(progress * Math.PI) *
+        0.24;
       desiredHeading = roamingRoute.heading(firstIndex, middleIndex);
       desiredHeadPitch = -0.08;
       boundEnergy = Math.sin(progress * Math.PI);
@@ -151,7 +154,9 @@ export function Rabbit({
         behavior.variation * 1.25,
       );
       rabbit.current.position.y +=
-        Math.abs(Math.sin(progress * Math.PI * 5)) * 0.24;
+        Math.abs(Math.sin(phaseTime * 3.8)) *
+        Math.sin(progress * Math.PI) *
+        0.24;
       desiredHeading = roamingRoute.heading(middleIndex, finalIndex);
       desiredHeadPitch = -0.08;
       boundEnergy = Math.sin(progress * Math.PI);

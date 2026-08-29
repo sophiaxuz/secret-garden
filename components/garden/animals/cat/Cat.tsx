@@ -29,16 +29,16 @@ const CAT_HOME = createHabitatVector(ANIMAL_HABITATS.cat.start);
 
 // A cat may watch for a long time, then unexpectedly decide to prowl.
 const CAT_ROUTINE = [
-  { name: "watching", minDuration: 2.5, maxDuration: 9 },
-  { name: "prowling", minDuration: 6, maxDuration: 12 },
-  { name: "sitting", minDuration: 3, maxDuration: 10 },
-  { name: "wandering", minDuration: 6, maxDuration: 12 },
-  { name: "settling", minDuration: 1, maxDuration: 4 },
+  { name: "watching", minDuration: 5, maxDuration: 13 },
+  { name: "prowling", minDuration: 17, maxDuration: 28 },
+  { name: "sitting", minDuration: 5, maxDuration: 14 },
+  { name: "wandering", minDuration: 17, maxDuration: 28 },
+  { name: "settling", minDuration: 3, maxDuration: 7 },
 ] as const;
 // Derive valid names directly from the schedule authoring data.
 type CatRoutineName = (typeof CAT_ROUTINE)[number]["name"];
 
-// Build a grey tabby that watches, prowls, pauses, and returns.
+// Build a grey tabby that watches, prowls, pauses, and wanders onward.
 export function Cat({
   animated = true,
   item,
@@ -157,8 +157,11 @@ export function Cat({
         progress,
         behavior.variation * 1.15,
       );
+      // Paw rhythm stays natural while the complete stalk covers ground slowly.
       cat.current.position.y +=
-        Math.abs(Math.sin(progress * Math.PI * 7)) * 0.035;
+        Math.abs(Math.sin(phaseTime * 4.2)) *
+        Math.sin(progress * Math.PI) *
+        0.035;
       desiredHeading = roamingRoute.heading(firstIndex, middleIndex);
       desiredBodyPitch = 0.06;
       prowlEnergy = Math.sin(progress * Math.PI);
@@ -182,7 +185,9 @@ export function Cat({
         behavior.variation * 1.15,
       );
       cat.current.position.y +=
-        Math.abs(Math.sin(progress * Math.PI * 7)) * 0.035;
+        Math.abs(Math.sin(phaseTime * 4.2)) *
+        Math.sin(progress * Math.PI) *
+        0.035;
       desiredHeading = roamingRoute.heading(middleIndex, finalIndex);
       desiredBodyPitch = 0.06;
       prowlEnergy = Math.sin(progress * Math.PI);

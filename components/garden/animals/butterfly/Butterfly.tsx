@@ -29,9 +29,9 @@ type ButterflyProps = AnimatedAnimalProps & {
   phase?: number;
 };
 
-// One long flight phase selects a fresh destination every time it completes.
+// One unhurried flight phase selects a fresh destination every time it completes.
 const BUTTERFLY_ROUTINE = [
-  { name: "flying", minDuration: 9, maxDuration: 18 },
+  { name: "flying", minDuration: 18, maxDuration: 32 },
 ] as const;
 
 // Build a lightweight butterfly from a body and four moving wings.

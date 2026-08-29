@@ -27,7 +27,7 @@ import { getSquirrelMotion, SQUIRREL_CYCLE_SECONDS } from "./squirrel-motion";
 const SQUIRREL_REST_POSE = getSquirrelMotion(0);
 // Preserve the safe climb sequence while varying its complete pace each cycle.
 const SQUIRREL_ROUTINE = [
-  { name: "journey", minDuration: 30, maxDuration: 48 },
+  { name: "journey", minDuration: 44, maxDuration: 68 },
 ] as const;
 // Build a small squirrel pausing near the edge of the path.
 export function Squirrel({

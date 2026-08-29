@@ -41,11 +41,11 @@ const ROBIN_PERCHES = GARDEN_TREES.map(
 
 // The wide perch range makes each sudden takeoff difficult to anticipate exactly.
 const ROBIN_ROUTINE = [
-  { name: "hopping", minDuration: 3, maxDuration: 7 },
-  { name: "flyingUp", minDuration: 2.2, maxDuration: 3.8 },
-  { name: "perching", minDuration: 2.5, maxDuration: 10 },
-  { name: "flyingDown", minDuration: 2.2, maxDuration: 3.8 },
-  { name: "watching", minDuration: 1.5, maxDuration: 6 },
+  { name: "hopping", minDuration: 5, maxDuration: 10 },
+  { name: "flyingUp", minDuration: 4.5, maxDuration: 7.5 },
+  { name: "perching", minDuration: 5, maxDuration: 14 },
+  { name: "flyingDown", minDuration: 4.5, maxDuration: 7.5 },
+  { name: "watching", minDuration: 3, maxDuration: 9 },
 ] as const;
 // Derive the valid routine vocabulary from the authored phases.
 type RobinRoutineName = (typeof ROBIN_ROUTINE)[number]["name"];
