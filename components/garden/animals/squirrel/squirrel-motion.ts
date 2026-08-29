@@ -40,7 +40,7 @@ export type SquirrelMotion = {
 // Look up the named tree once so every frame reuses the same stable placement.
 const CLIMB_TREE = getGardenTreeById(ANIMAL_HABITATS.squirrel.treeId);
 // Copy the immutable habitat tuple into the mutable tuple shape returned to renderers.
-const GROUND_START: [number, number, number] = [
+const DEFAULT_GROUND_START: [number, number, number] = [
   ...ANIMAL_HABITATS.squirrel.start,
 ];
 // Body clearance places Hazel's center outside bark while her paws meet it.
@@ -148,7 +148,11 @@ function getGroundJourney(
 }
 
 // Return Hazel's complete world pose for any elapsed garden time.
-export function getSquirrelMotion(elapsedTime: number): SquirrelMotion {
+export function getSquirrelMotion(
+  elapsedTime: number,
+  groundStart: HabitatPoint = DEFAULT_GROUND_START,
+  groundEnd: HabitatPoint = groundStart,
+): SquirrelMotion {
   // Modulo repeats the same calm journey indefinitely.
   const cycle =
     ((elapsedTime % SQUIRREL_CYCLE_SECONDS) + SQUIRREL_CYCLE_SECONDS) %
@@ -159,10 +163,10 @@ export function getSquirrelMotion(elapsedTime: number): SquirrelMotion {
     // A tiny sniffing lift keeps the grounded pause alive.
     const sniffLift = Math.abs(Math.sin(cycle * 2.2)) * 0.035;
     // Face the trunk base while softly scanning the nearby garden.
-    const heading = headingBetween(GROUND_START, TRUNK_BASE);
+    const heading = headingBetween(groundStart, TRUNK_BASE);
     // Return a complete resting pose without leaking phase calculations to React.
     return {
-      position: [GROUND_START[0], GROUND_START[1] + sniffLift, GROUND_START[2]],
+      position: [groundStart[0], groundStart[1] + sniffLift, groundStart[2]],
       phase: "resting",
       heading: heading + Math.sin(cycle * 1.2) * 0.18,
       pitch: 0.08,
@@ -174,7 +178,7 @@ export function getSquirrelMotion(elapsedTime: number): SquirrelMotion {
   if (cycle < 7) {
     // Delegate the complete outward bound through the shared ground helper.
     return getGroundJourney(
-      GROUND_START,
+      groundStart,
       TRUNK_BASE,
       (cycle - 3) / 4,
       "approaching",
@@ -268,22 +272,22 @@ export function getSquirrelMotion(elapsedTime: number): SquirrelMotion {
     };
   }
 
-  // Bound back from the tree to the original western resting patch.
+  // Bound away from the tree toward a newly selected garden foraging patch.
   if (cycle < 23) {
     // Delegate the mirrored homeward bound through the same ground helper.
     return getGroundJourney(
       TRUNK_BASE,
-      GROUND_START,
+      groundEnd,
       (cycle - 19) / 4,
       "returning",
     );
   }
 
-  // Settle into a stiller rest before the twenty-six-second loop repeats.
+  // Settle at the new patch before the next connected journey begins there.
   return {
-    position: [...GROUND_START],
+    position: [groundEnd[0], groundEnd[1], groundEnd[2]],
     phase: "resting",
-    heading: headingBetween(GROUND_START, TRUNK_BASE),
+    heading: headingBetween(groundEnd, TRUNK_BASE),
     pitch: 0,
     motionEnergy: 0,
   };

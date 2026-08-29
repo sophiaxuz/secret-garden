@@ -6,29 +6,30 @@ import { useRef } from "react";
 import * as THREE from "three";
 // One shared target follows the cat without entering its visible model.
 import { GardenInteractionTarget } from "../../interaction/GardenInteractionTarget";
-// Shared habitat data keeps the cat's patrol easy to relocate with the garden.
-import { ANIMAL_HABITATS, createRoundTripRoute } from "../animal-habitats";
+// Shared habitat data supplies the cat's first position when a visit begins.
+import { ANIMAL_HABITATS, createHabitatVector } from "../animal-habitats";
 // The shared planner varies pauses and attention choices across every visit.
 import { createAnimalRoutine, type AnimalRoutine } from "../animal-routine";
+// Garden-wide roaming lets the cat choose distant places beyond its old patrol.
+import {
+  createAnimalRoamingRoute,
+  placeAlongRoamingJourney,
+  type AnimalRoamingRoute,
+} from "../animal-roaming";
 // The cat uses the identity and highlight shared by all animals.
 import type { AnimatedAnimalProps } from "../animal-identities";
 // CatModel keeps all visible mesh geometry out of this behavior module.
 import { CatModel, type CatRig } from "./CatModel";
 
-// The cat patrols a shaded route deeper in the garden.
-const {
-  start: CAT_START,
-  end: CAT_END,
-  outboundHeading: OUTBOUND_HEADING,
-  returnHeading: RETURN_HEADING,
-} = createRoundTripRoute(ANIMAL_HABITATS.cat);
+// The original deep habitat remains the cat's first rendered resting place.
+const CAT_HOME = createHabitatVector(ANIMAL_HABITATS.cat.start);
 
 // A cat may watch for a long time, then unexpectedly decide to prowl.
 const CAT_ROUTINE = [
   { name: "watching", minDuration: 2.5, maxDuration: 9 },
-  { name: "outbound", minDuration: 4, maxDuration: 7 },
+  { name: "prowling", minDuration: 6, maxDuration: 12 },
   { name: "sitting", minDuration: 3, maxDuration: 10 },
-  { name: "returning", minDuration: 4, maxDuration: 7 },
+  { name: "wandering", minDuration: 6, maxDuration: 12 },
   { name: "settling", minDuration: 1, maxDuration: 4 },
 ] as const;
 // Derive valid names directly from the schedule authoring data.
@@ -55,13 +56,25 @@ export function Cat({
   // Hind-leg refs fold for sitting and join the walking gait.
   const leftHindLeg = useRef<THREE.Mesh>(null);
   const rightHindLeg = useRef<THREE.Mesh>(null);
+  // One seed gives this visit a coherent timing and destination personality.
+  const personalitySeed = useRef(Math.random() * 10_000).current;
   // Keep one random personality stable throughout this mounted garden visit.
   const routine = useRef<AnimalRoutine<CatRoutineName> | null>(null);
   if (!routine.current) {
-    routine.current = createAnimalRoutine(Math.random() * 10_000, CAT_ROUTINE);
+    routine.current = createAnimalRoutine(personalitySeed, CAT_ROUTINE);
   }
   // Capture the initialized planner so the frame callback sees a non-null routine.
   const behaviorRoutine = routine.current;
+  // Route choices remain cached so the cat never changes destination mid-stalk.
+  const roaming = useRef<AnimalRoamingRoute | null>(null);
+  if (!roaming.current) {
+    roaming.current = createAnimalRoamingRoute(
+      personalitySeed,
+      ANIMAL_HABITATS.cat.start,
+    );
+  }
+  // Capture the initialized route for use inside the animation callback.
+  const roamingRoute = roaming.current;
   // Package the model's internal attachment points behind one private interface.
   const rig: CatRig = {
     body,
@@ -74,7 +87,7 @@ export function Cat({
     rightHindLeg,
   };
 
-  // Repeat a twenty-second watch, prowl, sit, and return sequence.
+  // Continue watching, prowling, and choosing new garden destinations.
   useFrame(({ clock }, delta) => {
     // Stop until each animated part has mounted in the scene.
     if (
@@ -91,8 +104,8 @@ export function Cat({
       return;
     // Return to a composed standing pose when motion should be reduced.
     if (!animated) {
-      cat.current.position.copy(CAT_START);
-      cat.current.rotation.set(0, OUTBOUND_HEADING, 0);
+      cat.current.position.copy(CAT_HOME);
+      cat.current.rotation.set(0, 0, 0);
       body.current.position.y = 0;
       body.current.rotation.x = 0;
       head.current.rotation.set(0, 0, 0);
@@ -108,6 +121,14 @@ export function Cat({
     // Advance the current unpredictable decision by this rendered frame.
     const behavior = behaviorRoutine.advance(delta);
     const phaseTime = behavior.phaseTime;
+    // Two journeys per cycle form one continuous route with no return-home reset.
+    const firstIndex = behavior.cycleIndex * 2;
+    const middleIndex = firstIndex + 1;
+    const finalIndex = firstIndex + 2;
+    // Cached points remain fixed for the duration of each deliberate stalk.
+    const firstPoint = roamingRoute.point(firstIndex);
+    const middlePoint = roamingRoute.point(middleIndex);
+    const finalPoint = roamingRoute.point(finalIndex);
     // Store phase targets before applying shared smoothing.
     let desiredHeading = cat.current.rotation.y;
     let desiredHeadTurn = 0;
@@ -116,51 +137,56 @@ export function Cat({
     let sittingEnergy = 0;
 
     if (behavior.phase === "watching") {
-      // Crouch near the first patch and watch the nearby path.
-      cat.current.position.copy(CAT_START);
+      // Crouch at the last destination and watch before choosing to move.
+      cat.current.position.copy(firstPoint);
       cat.current.position.y += Math.sin(phaseTime * 1.6) * 0.008;
-      desiredHeading = OUTBOUND_HEADING;
+      desiredHeading = roamingRoute.heading(firstIndex, middleIndex);
       desiredHeadTurn =
         Math.sin(phaseTime * 0.75) * 0.38 + behavior.variation * 0.24;
       desiredBodyPitch = 0.04;
-    } else if (behavior.phase === "outbound") {
-      // Prowl toward the shaded end with smooth, low steps.
+    } else if (behavior.phase === "prowling") {
+      // Prowl toward a newly chosen place across the wider garden.
       const progress = behavior.progress;
-      const eased = THREE.MathUtils.smoothstep(progress, 0, 1);
-      cat.current.position.lerpVectors(CAT_START, CAT_END, eased);
-      // Each stalk bows toward a different imagined sound in the grass.
-      cat.current.position.x +=
-        Math.sin(progress * Math.PI) * behavior.variation * 0.5;
+      placeAlongRoamingJourney(
+        cat.current.position,
+        firstPoint,
+        middlePoint,
+        progress,
+        behavior.variation * 1.15,
+      );
       cat.current.position.y +=
         Math.abs(Math.sin(progress * Math.PI * 7)) * 0.035;
-      desiredHeading = OUTBOUND_HEADING;
+      desiredHeading = roamingRoute.heading(firstIndex, middleIndex);
       desiredBodyPitch = 0.06;
       prowlEnergy = Math.sin(progress * Math.PI);
     } else if (behavior.phase === "sitting") {
       // Sit quietly at the far end and follow sounds with the head.
-      cat.current.position.copy(CAT_END);
+      cat.current.position.copy(middlePoint);
       cat.current.position.y += Math.sin(phaseTime * 1.8) * 0.008;
-      desiredHeading = RETURN_HEADING;
+      desiredHeading = roamingRoute.heading(middleIndex, finalIndex);
       desiredHeadTurn =
         Math.sin(phaseTime * 0.95) * 0.46 + behavior.variation * 0.28;
       desiredBodyPitch = -0.06;
       sittingEnergy = 1;
-    } else if (behavior.phase === "returning") {
-      // Return with the same deliberate stalking gait.
+    } else if (behavior.phase === "wandering") {
+      // Slip onward to another destination instead of returning predictably.
       const progress = behavior.progress;
-      const eased = THREE.MathUtils.smoothstep(progress, 0, 1);
-      cat.current.position.lerpVectors(CAT_END, CAT_START, eased);
-      cat.current.position.x +=
-        Math.sin(progress * Math.PI) * behavior.variation * 0.5;
+      placeAlongRoamingJourney(
+        cat.current.position,
+        middlePoint,
+        finalPoint,
+        progress,
+        behavior.variation * 1.15,
+      );
       cat.current.position.y +=
         Math.abs(Math.sin(progress * Math.PI * 7)) * 0.035;
-      desiredHeading = RETURN_HEADING;
+      desiredHeading = roamingRoute.heading(middleIndex, finalIndex);
       desiredBodyPitch = 0.06;
       prowlEnergy = Math.sin(progress * Math.PI);
     } else {
-      // Settle at the start before beginning another watch.
-      cat.current.position.copy(CAT_START);
-      desiredHeading = OUTBOUND_HEADING;
+      // Settle at the newly reached place before another watch begins.
+      cat.current.position.copy(finalPoint);
+      desiredHeading = roamingRoute.heading(finalIndex, finalIndex + 1);
       desiredHeadTurn = 0.12 + behavior.variation * 0.16;
     }
 
@@ -229,11 +255,11 @@ export function Cat({
   return (
     <group
       ref={cat}
-      position={CAT_START.toArray()}
-      rotation={[0, OUTBOUND_HEADING, 0]}
+      position={CAT_HOME.toArray()}
+      rotation={[0, 0, 0]}
       scale={0.5}
     >
-      {/* This volume follows the cat through watching, prowling, and sitting. */}
+      {/* This volume follows the cat throughout its complete garden roaming. */}
       <GardenInteractionTarget
         item={item}
         position={[0, 0.3, 0]}

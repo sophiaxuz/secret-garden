@@ -31,7 +31,7 @@ flowchart LR
     World --> Terrain["terrain/<br/>ground + path + grass"]
     World --> Flora["flora/<br/>flowers + trees"]
     World --> Animals["animals/<br/>models + habitats + motion"]
-    Routine["animal-routine<br/>variable phases + stable choices"] --> Animals
+    Routine["animal-routine + animal-roaming<br/>variable phases + garden-wide destinations"] --> Animals
 
     Flora --> Targets["GardenInteractionTarget<br/>small invisible hit volumes"]
     Animals --> Targets

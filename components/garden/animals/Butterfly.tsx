@@ -8,6 +8,14 @@ import * as THREE from "three";
 import { GardenInteractionTarget } from "../interaction/GardenInteractionTarget";
 // The shared point type gives butterfly origins the same habitat vocabulary as animals.
 import type { HabitatPoint } from "./animal-habitats";
+// Variable flight durations keep arrivals from following a visible metronome.
+import { createAnimalRoutine, type AnimalRoutine } from "./animal-routine";
+// The roaming planner lets a butterfly cross the full garden rather than orbit one flower.
+import {
+  createAnimalRoamingRoute,
+  placeAlongRoamingJourney,
+  type AnimalRoamingRoute,
+} from "./animal-roaming";
 // Butterfly props extend the identity and highlight shared by all animals.
 import type { AnimatedAnimalProps } from "./animal-identities";
 
@@ -17,6 +25,11 @@ type ButterflyProps = AnimatedAnimalProps & {
   origin: HabitatPoint;
   phase?: number;
 };
+
+// One long flight phase selects a fresh destination every time it completes.
+const BUTTERFLY_ROUTINE = [
+  { name: "flying", minDuration: 9, maxDuration: 18 },
+] as const;
 
 // Build a lightweight butterfly from a body and four moving wings.
 export function Butterfly({
@@ -32,15 +45,25 @@ export function Butterfly({
   // These refs animate the left and right wing pairs independently.
   const leftWing = useRef<THREE.Group>(null);
   const rightWing = useRef<THREE.Group>(null);
-  // Each mounted butterfly receives a stable but visit-specific wandering character.
-  const personality = useRef({
-    pace: 0.82 + Math.random() * 0.36,
-    wideDrift: Math.random() * Math.PI * 2,
-    turnDrift: Math.random() * Math.PI * 2,
-  }).current;
+  // Combine the authored phase with randomness so the three butterflies remain distinct.
+  const personalitySeed = useRef(Math.random() * 10_000 + phase * 997).current;
+  // The routine controls how long each cross-garden flight lasts.
+  const routine = useRef<AnimalRoutine<"flying"> | null>(null);
+  if (!routine.current) {
+    routine.current = createAnimalRoutine(personalitySeed, BUTTERFLY_ROUTINE);
+  }
+  // Capture the initialized routine for the render loop.
+  const behaviorRoutine = routine.current;
+  // Cache garden-wide destinations so a butterfly commits to each chosen flower patch.
+  const roaming = useRef<AnimalRoamingRoute | null>(null);
+  if (!roaming.current) {
+    roaming.current = createAnimalRoamingRoute(personalitySeed, origin);
+  }
+  // Capture the initialized route for the render loop.
+  const roamingRoute = roaming.current;
 
   // Update position, orientation, and wing angle before every frame.
-  useFrame(({ clock }) => {
+  useFrame(({ clock }, delta) => {
     // Stop until React has connected all refs to Three.js objects.
     if (!butterfly.current || !leftWing.current || !rightWing.current) return;
     // Keep each butterfly calmly resting at its own origin for reduced motion.
@@ -51,29 +74,30 @@ export function Butterfly({
       rightWing.current.rotation.y = 0;
       return;
     }
-    // Add a phase offset so multiple butterflies do not move in formation.
-    const time = clock.elapsedTime * personality.pace + phase;
-    // Layer slow independent drift over the figure-eight so its route does not repeat.
-    const wanderingX =
-      Math.sin(time * 0.45) * 1.25 +
-      Math.sin(time * 0.13 + personality.wideDrift) * 0.5;
-    const wanderingZ =
-      Math.sin(time * 0.3) * Math.cos(time * 0.45) * 1.45 +
-      Math.cos(time * 0.17 + personality.turnDrift) * 0.55;
-    // Drift around the origin on its own layered, visit-specific path.
-    butterfly.current.position.set(
-      origin[0] + wanderingX,
-      origin[1] +
-        Math.sin(time * 1.1) * 0.24 +
-        Math.sin(time * 0.23 + personality.wideDrift) * 0.1,
-      origin[2] + wanderingZ,
+    // Advance one variable-duration flight toward the next distant destination.
+    const behavior = behaviorRoutine.advance(delta);
+    // Each completed flight continues from its old endpoint to a fresh route point.
+    const from = roamingRoute.point(behavior.cycleIndex);
+    const to = roamingRoute.point(behavior.cycleIndex + 1);
+    // Bow the route sideways so long flights never look ruler-straight.
+    placeAlongRoamingJourney(
+      butterfly.current.position,
+      from,
+      to,
+      behavior.progress,
+      behavior.variation * 3.2,
     );
-    // Face approximately along the current curved flight path.
+    // Rise above grass during travel and settle lower near each destination.
+    butterfly.current.position.y +=
+      Math.sin(behavior.progress * Math.PI) *
+        (0.8 + Math.abs(behavior.variation) * 1.2) +
+      Math.sin(clock.elapsedTime * 2.1 + phase) * 0.16;
+    // Face the broad destination while small oscillations suggest searching flight.
     butterfly.current.rotation.y =
-      Math.cos(time * 0.45) * 0.7 +
-      Math.sin(time * 0.17 + personality.turnDrift) * 0.28;
+      roamingRoute.heading(behavior.cycleIndex, behavior.cycleIndex + 1) +
+      Math.sin(clock.elapsedTime * 0.9 + phase) * 0.2;
     // Oscillate both wings in opposite directions to create flapping.
-    const flap = Math.sin(time * 10) * 0.65;
+    const flap = Math.sin(clock.elapsedTime * 10 + phase) * 0.65;
     leftWing.current.rotation.y = flap;
     rightWing.current.rotation.y = -flap;
   });

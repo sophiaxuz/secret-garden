@@ -6,29 +6,30 @@ import { useRef } from "react";
 import * as THREE from "three";
 // One shared target follows the dog without entering its visible model.
 import { GardenInteractionTarget } from "../../interaction/GardenInteractionTarget";
-// Shared habitat data keeps the dog's patrol easy to relocate with the garden.
-import { ANIMAL_HABITATS, createRoundTripRoute } from "../animal-habitats";
+// Shared habitat data supplies the dog's first position when a visit begins.
+import { ANIMAL_HABITATS, createHabitatVector } from "../animal-habitats";
 // The shared planner varies pauses and attention choices across every visit.
 import { createAnimalRoutine, type AnimalRoutine } from "../animal-routine";
+// Garden-wide roaming replaces the dog's former two-point local patrol.
+import {
+  createAnimalRoamingRoute,
+  placeAlongRoamingJourney,
+  type AnimalRoamingRoute,
+} from "../animal-roaming";
 // The dog uses the identity and highlight shared by all animals.
 import type { AnimatedAnimalProps } from "../animal-identities";
 // DogModel keeps all visible mesh geometry out of this behavior module.
 import { DogModel, type DogRig } from "./DogModel";
 
-// The dog follows this short route beside the path rather than roaming randomly.
-const {
-  start: DOG_START,
-  end: DOG_END,
-  outboundHeading: OUTBOUND_HEADING,
-  returnHeading: RETURN_HEADING,
-} = createRoundTripRoute(ANIMAL_HABITATS.dog);
+// The authored western habitat remains the dog's stable first rendered position.
+const DOG_HOME = createHabitatVector(ANIMAL_HABITATS.dog.start);
 
 // Ranges preserve the dog's story while removing the fixed twenty-four-second loop.
 const DOG_ROUTINE = [
   { name: "sniffing", minDuration: 2.5, maxDuration: 7 },
-  { name: "outbound", minDuration: 4.5, maxDuration: 7.5 },
+  { name: "wandering", minDuration: 5.5, maxDuration: 11 },
   { name: "watching", minDuration: 2.5, maxDuration: 8 },
-  { name: "returning", minDuration: 4.5, maxDuration: 7.5 },
+  { name: "exploring", minDuration: 5.5, maxDuration: 11 },
   { name: "resting", minDuration: 1.5, maxDuration: 5 },
 ] as const;
 // Derive the phase-name union so behavior code cannot misspell a routine phase.
@@ -51,14 +52,26 @@ export function Dog({
   const frontRightLeg = useRef<THREE.Mesh>(null);
   const backLeftLeg = useRef<THREE.Mesh>(null);
   const backRightLeg = useRef<THREE.Mesh>(null);
+  // One seed ties the dog's timing and destination personality together.
+  const personalitySeed = useRef(Math.random() * 10_000).current;
   // A fresh personality seed makes each mounted visit choose a different rhythm.
   const routine = useRef<AnimalRoutine<DogRoutineName> | null>(null);
   // Create once so ordinary React rerenders do not reset the dog's decisions.
   if (!routine.current) {
-    routine.current = createAnimalRoutine(Math.random() * 10_000, DOG_ROUTINE);
+    routine.current = createAnimalRoutine(personalitySeed, DOG_ROUTINE);
   }
   // Capture the initialized planner so the frame callback sees a non-null routine.
   const behaviorRoutine = routine.current;
+  // Cache the route planner so already chosen destinations never move mid-journey.
+  const roaming = useRef<AnimalRoamingRoute | null>(null);
+  if (!roaming.current) {
+    roaming.current = createAnimalRoamingRoute(
+      personalitySeed,
+      ANIMAL_HABITATS.dog.start,
+    );
+  }
+  // Capture the initialized route for use inside the animation callback.
+  const roamingRoute = roaming.current;
   // Package the model's internal attachment points behind one private interface.
   const rig: DogRig = {
     head,
@@ -69,7 +82,7 @@ export function Dog({
     backRightLeg,
   };
 
-  // Repeat a relaxed twenty-four-second garden patrol.
+  // Continue choosing new places throughout the complete garden visit.
   useFrame(({ clock }, delta) => {
     // Wait until every animated piece exists in the Three.js scene.
     if (
@@ -84,8 +97,8 @@ export function Dog({
       return;
     // Reset to a friendly standing pose for reduced-motion visitors.
     if (!animated) {
-      dog.current.position.copy(DOG_START);
-      dog.current.rotation.set(0, OUTBOUND_HEADING, 0);
+      dog.current.position.copy(DOG_HOME);
+      dog.current.rotation.set(0, 0, 0);
       head.current.rotation.set(0, 0, 0);
       tail.current.rotation.z = 0.22;
       frontLeftLeg.current.rotation.x = 0;
@@ -98,6 +111,14 @@ export function Dog({
     // Advance the variable routine and reuse its phase-local time for small motions.
     const behavior = behaviorRoutine.advance(delta);
     const phaseTime = behavior.phaseTime;
+    // Two fresh destinations per routine cycle create one continuous roaming chain.
+    const firstIndex = behavior.cycleIndex * 2;
+    const middleIndex = firstIndex + 1;
+    const finalIndex = firstIndex + 2;
+    // Resolve stable endpoints once for the current rendered frame.
+    const firstPoint = roamingRoute.point(firstIndex);
+    const middlePoint = roamingRoute.point(middleIndex);
+    const finalPoint = roamingRoute.point(finalIndex);
     // Each phase updates these targets before the shared smoothing code runs.
     let desiredHeading = dog.current.rotation.y;
     let desiredHeadPitch = 0;
@@ -105,48 +126,53 @@ export function Dog({
     let gaitEnergy = 0;
 
     if (behavior.phase === "sniffing") {
-      // Sniff a patch near the route's beginning.
-      dog.current.position.copy(DOG_START);
+      // Sniff whichever patch the previous garden-wide journey reached.
+      dog.current.position.copy(firstPoint);
       dog.current.position.y += Math.sin(phaseTime * 2.2) * 0.012;
-      desiredHeading = OUTBOUND_HEADING;
+      desiredHeading = roamingRoute.heading(firstIndex, middleIndex);
       desiredHeadPitch = 0.26 + Math.sin(phaseTime * 2.6) * 0.08;
       desiredHeadTurn =
         Math.sin(phaseTime * 0.9) * 0.18 + behavior.variation * 0.16;
-    } else if (behavior.phase === "outbound") {
-      // Trot toward the far patch with a gentle rise on each step.
+    } else if (behavior.phase === "wandering") {
+      // Trot toward a newly selected place anywhere in the garden.
       const progress = behavior.progress;
-      const eased = THREE.MathUtils.smoothstep(progress, 0, 1);
-      dog.current.position.lerpVectors(DOG_START, DOG_END, eased);
-      // Each patrol bends slightly toward a different scent along the route.
-      dog.current.position.z +=
-        Math.sin(progress * Math.PI) * behavior.variation * 0.65;
+      placeAlongRoamingJourney(
+        dog.current.position,
+        firstPoint,
+        middlePoint,
+        progress,
+        behavior.variation * 1.4,
+      );
       dog.current.position.y +=
         Math.abs(Math.sin(progress * Math.PI * 8)) * 0.07;
-      desiredHeading = OUTBOUND_HEADING;
+      desiredHeading = roamingRoute.heading(firstIndex, middleIndex);
       gaitEnergy = Math.sin(progress * Math.PI);
     } else if (behavior.phase === "watching") {
       // Pause at the end and watch different parts of the garden.
-      dog.current.position.copy(DOG_END);
+      dog.current.position.copy(middlePoint);
       dog.current.position.y += Math.sin(phaseTime * 1.7) * 0.01;
-      desiredHeading = RETURN_HEADING;
+      desiredHeading = roamingRoute.heading(middleIndex, finalIndex);
       desiredHeadTurn =
         Math.sin(phaseTime * 0.8) * 0.35 + behavior.variation * 0.2;
       desiredHeadPitch = -0.05;
-    } else if (behavior.phase === "returning") {
-      // Trot home along the reverse route.
+    } else if (behavior.phase === "exploring") {
+      // Continue onward instead of predictably returning to the old home patch.
       const progress = behavior.progress;
-      const eased = THREE.MathUtils.smoothstep(progress, 0, 1);
-      dog.current.position.lerpVectors(DOG_END, DOG_START, eased);
-      dog.current.position.z +=
-        Math.sin(progress * Math.PI) * behavior.variation * 0.65;
+      placeAlongRoamingJourney(
+        dog.current.position,
+        middlePoint,
+        finalPoint,
+        progress,
+        behavior.variation * 1.4,
+      );
       dog.current.position.y +=
         Math.abs(Math.sin(progress * Math.PI * 8)) * 0.07;
-      desiredHeading = RETURN_HEADING;
+      desiredHeading = roamingRoute.heading(middleIndex, finalIndex);
       gaitEnergy = Math.sin(progress * Math.PI);
     } else {
-      // Rest at the starting patch before beginning another patrol.
-      dog.current.position.copy(DOG_START);
-      desiredHeading = OUTBOUND_HEADING;
+      // Rest at the new destination before deciding where to wander next.
+      dog.current.position.copy(finalPoint);
+      desiredHeading = roamingRoute.heading(finalIndex, finalIndex + 1);
       desiredHeadPitch = 0.08;
       desiredHeadTurn =
         Math.sin(phaseTime * 1.1) * 0.16 + behavior.variation * 0.12;
@@ -190,11 +216,11 @@ export function Dog({
   return (
     <group
       ref={dog}
-      position={DOG_START.toArray()}
-      rotation={[0, OUTBOUND_HEADING, 0]}
+      position={DOG_HOME.toArray()}
+      rotation={[0, 0, 0]}
       scale={0.58}
     >
-      {/* This volume follows the complete dog along both halves of its patrol. */}
+      {/* This volume follows the dog wherever it wanders in the garden. */}
       <GardenInteractionTarget
         item={item}
         position={[0, 0.35, 0]}

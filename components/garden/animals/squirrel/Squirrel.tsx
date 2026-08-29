@@ -8,8 +8,15 @@ import * as THREE from "three";
 import { GardenInteractionTarget } from "../../interaction/GardenInteractionTarget";
 // The squirrel uses the identity and highlight shared by all animals.
 import type { AnimatedAnimalProps } from "../animal-identities";
+// Habitat data supplies Hazel's first foraging position.
+import { ANIMAL_HABITATS, type HabitatPoint } from "../animal-habitats";
 // A variable outer clock changes when Hazel decides to begin the full journey.
 import { createAnimalRoutine, type AnimalRoutine } from "../animal-routine";
+// Garden-wide destinations let each tree climb begin and end in different places.
+import {
+  createAnimalRoamingRoute,
+  type AnimalRoamingRoute,
+} from "../animal-roaming";
 // The pure motion seam owns Hazel's complete ground and tree-climbing journey.
 import { getSquirrelMotion, SQUIRREL_CYCLE_SECONDS } from "./squirrel-motion";
 
@@ -17,7 +24,7 @@ import { getSquirrelMotion, SQUIRREL_CYCLE_SECONDS } from "./squirrel-motion";
 const SQUIRREL_REST_POSE = getSquirrelMotion(0);
 // Preserve the safe climb sequence while varying its complete pace each cycle.
 const SQUIRREL_ROUTINE = [
-  { name: "journey", minDuration: 22, maxDuration: 36 },
+  { name: "journey", minDuration: 30, maxDuration: 48 },
 ] as const;
 // Build a small squirrel pausing near the edge of the path.
 export function Squirrel({
@@ -32,16 +39,25 @@ export function Squirrel({
   // Paw refs alternate during a running burst.
   const leftPaw = useRef<THREE.Mesh>(null);
   const rightPaw = useRef<THREE.Mesh>(null);
+  // One seed coordinates changing journey lengths with changing foraging patches.
+  const personalitySeed = useRef(Math.random() * 10_000).current;
   // Keep one visit-specific pace planner stable across interaction highlights.
   const routine = useRef<AnimalRoutine<"journey"> | null>(null);
   if (!routine.current) {
-    routine.current = createAnimalRoutine(
-      Math.random() * 10_000,
-      SQUIRREL_ROUTINE,
-    );
+    routine.current = createAnimalRoutine(personalitySeed, SQUIRREL_ROUTINE);
   }
   // Capture the initialized planner for the frame callback.
   const behaviorRoutine = routine.current;
+  // Cache each newly chosen garden patch so Hazel's route stays continuous.
+  const roaming = useRef<AnimalRoamingRoute | null>(null);
+  if (!roaming.current) {
+    roaming.current = createAnimalRoamingRoute(
+      personalitySeed,
+      ANIMAL_HABITATS.squirrel.start,
+    );
+  }
+  // Capture the initialized garden route for the animation callback.
+  const roamingRoute = roaming.current;
 
   // Animate the squirrel without causing React component rerenders.
   useFrame(({ clock }, delta) => {
@@ -68,8 +84,22 @@ export function Squirrel({
     }
     // Stretch or compress the complete safe journey with a newly chosen duration.
     const behavior = behaviorRoutine.advance(delta);
+    // End each tree visit at a new patch that becomes the next journey's beginning.
+    const startPoint = roamingRoute.point(behavior.cycleIndex);
+    const endPoint = roamingRoute.point(behavior.cycleIndex + 1);
+    // Convert cached vectors into the immutable tuple interface used by motion tests.
+    const groundStart: HabitatPoint = [
+      startPoint.x,
+      startPoint.y,
+      startPoint.z,
+    ];
+    const groundEnd: HabitatPoint = [endPoint.x, endPoint.y, endPoint.z];
     // Ask the public motion seam for the equivalent point in its tested cycle.
-    const pose = getSquirrelMotion(behavior.progress * SQUIRREL_CYCLE_SECONDS);
+    const pose = getSquirrelMotion(
+      behavior.progress * SQUIRREL_CYCLE_SECONDS,
+      groundStart,
+      groundEnd,
+    );
     // Place Hazel directly on the continuous ground, trunk, or branch path.
     squirrel.current.position.set(...pose.position);
 

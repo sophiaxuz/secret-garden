@@ -80,3 +80,16 @@ test("Hazel moves continuously between the tapered trunk and branch", () => {
     distanceBetween(beforeTrunkDescent.position, afterTrunkDescent.position),
   ).toBeLessThan(0.02);
 });
+
+// Protect the handoff between changing foraging patches across consecutive climbs.
+test("Hazel ends one tree visit where her next visit can begin", () => {
+  // These distant points model two destinations selected by garden-wide roaming.
+  const oldPatch = [-8, 0.26, 7] as const;
+  const newPatch = [9, 0.26, -15] as const;
+  // The final resting phase must already occupy the newly selected destination.
+  const finishedVisit = getSquirrelMotion(25.9, oldPatch, newPatch);
+  // The next cycle uses that same destination as its connected starting point.
+  const nextVisit = getSquirrelMotion(0, newPatch, [-4, 0.26, 2]);
+  // Matching positions prevent any visible teleport at the cycle boundary.
+  expect(finishedVisit.position).toEqual(nextVisit.position);
+});

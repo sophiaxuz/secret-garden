@@ -6,17 +6,35 @@ import { useRef } from "react";
 import * as THREE from "three";
 // One shared target follows the robin through hopping and flight phases.
 import { GardenInteractionTarget } from "../interaction/GardenInteractionTarget";
-// Shared habitat data keeps the robin's ground route and perch easy to relocate.
+// Shared habitat data supplies the robin's first ground position.
 import { ANIMAL_HABITATS, createHabitatVector } from "./animal-habitats";
+// Real tree branch measurements let the robin visit every tree without floating.
+import {
+  GARDEN_TREES,
+  TREE_BRANCH_PERCH_LOCAL_POSITION,
+} from "../flora/garden-trees";
 // The shared planner varies hops, perch pauses, and attention across each visit.
 import { createAnimalRoutine, type AnimalRoutine } from "./animal-routine";
+// Garden-wide roaming selects new ground patches between changing tree perches.
+import {
+  createAnimalRoamingRoute,
+  placeAlongRoamingJourney,
+  type AnimalRoamingRoute,
+} from "./animal-roaming";
 // The robin uses the same identity and highlight interface as every animal.
 import type { AnimatedAnimalProps } from "./animal-identities";
 
-// Reuse route endpoints rather than allocating new vectors every frame.
-const GROUND_START = createHabitatVector(ANIMAL_HABITATS.robin.groundStart);
-const GROUND_END = createHabitatVector(ANIMAL_HABITATS.robin.groundEnd);
-const PERCH = createHabitatVector(ANIMAL_HABITATS.robin.perch);
+// Reuse the authored first position for initial render and reduced-motion visitors.
+const ROBIN_HOME = createHabitatVector(ANIMAL_HABITATS.robin.groundStart);
+// Derive a real world-space perch from every rendered tree's scaled branch.
+const ROBIN_PERCHES = GARDEN_TREES.map(
+  ({ position, scale }) =>
+    new THREE.Vector3(
+      position[0] + TREE_BRANCH_PERCH_LOCAL_POSITION[0] * scale,
+      position[1] + TREE_BRANCH_PERCH_LOCAL_POSITION[1] * scale,
+      position[2] + TREE_BRANCH_PERCH_LOCAL_POSITION[2] * scale,
+    ),
+);
 
 // The wide perch range makes each sudden takeoff difficult to anticipate exactly.
 const ROBIN_ROUTINE = [
@@ -59,16 +77,29 @@ export function Robin({
   // Wing groups unfold and flap during the flight phases.
   const leftWing = useRef<THREE.Group>(null);
   const rightWing = useRef<THREE.Group>(null);
+  // One seed coordinates the robin's timing, roaming, and changing tree choices.
+  const personalitySeed = useRef(Math.random() * 10_000).current;
   // A visit-specific personality prevents the robin replaying one fixed film.
   const routine = useRef<AnimalRoutine<RobinRoutineName> | null>(null);
   if (!routine.current) {
-    routine.current = createAnimalRoutine(
-      Math.random() * 10_000,
-      ROBIN_ROUTINE,
-    );
+    routine.current = createAnimalRoutine(personalitySeed, ROBIN_ROUTINE);
   }
   // Capture the initialized planner for the frame callback.
   const behaviorRoutine = routine.current;
+  // Cache new ground destinations so the bird never redirects during a flight.
+  const roaming = useRef<AnimalRoamingRoute | null>(null);
+  if (!roaming.current) {
+    roaming.current = createAnimalRoamingRoute(
+      personalitySeed,
+      ANIMAL_HABITATS.robin.groundStart,
+    );
+  }
+  // Capture the initialized route for use inside the frame callback.
+  const roamingRoute = roaming.current;
+  // Offset the tree sequence for this visit while eventually visiting every tree.
+  const firstPerchIndex = useRef(
+    Math.floor(personalitySeed) % ROBIN_PERCHES.length,
+  ).current;
 
   // Run an open-ended hop, fly, perch, and return routine.
   useFrame(({ clock }, delta) => {
@@ -82,7 +113,7 @@ export function Robin({
       return;
     // Return to a grounded resting pose if reduced motion is enabled live.
     if (!animated) {
-      robin.current.position.copy(GROUND_START);
+      robin.current.position.copy(ROBIN_HOME);
       robin.current.rotation.set(0, 0.2, 0);
       head.current.rotation.y = 0;
       leftWing.current.rotation.z = 0.43;
@@ -92,6 +123,18 @@ export function Robin({
     // Advance the robin's current variable-duration decision.
     const behavior = behaviorRoutine.advance(delta);
     const phaseTime = behavior.phaseTime;
+    // Two ground points and one real branch define this cycle's connected journey.
+    const firstIndex = behavior.cycleIndex * 2;
+    const secondIndex = firstIndex + 1;
+    const nextIndex = firstIndex + 2;
+    const groundStart = roamingRoute.point(firstIndex);
+    const groundEnd = roamingRoute.point(secondIndex);
+    const nextGround = roamingRoute.point(nextIndex);
+    // Move to a different rendered tree after each complete behavior cycle.
+    const perch =
+      ROBIN_PERCHES[
+        (firstPerchIndex + behavior.cycleIndex) % ROBIN_PERCHES.length
+      ];
     // Track whether wings should be visibly flapping this frame.
     const flying =
       behavior.phase === "flyingUp" || behavior.phase === "flyingDown";
@@ -107,35 +150,37 @@ export function Robin({
       const hopProgress = scaledHops % 1;
       const routeProgress = behavior.progress;
       // Move forward steadily while the sine curve lifts each hop.
-      robin.current.position.lerpVectors(
-        GROUND_START,
-        GROUND_END,
+      placeAlongRoamingJourney(
+        robin.current.position,
+        groundStart,
+        groundEnd,
         routeProgress,
+        behavior.variation * 0.7,
       );
       robin.current.position.y += Math.sin(hopProgress * Math.PI) * 0.22;
       desiredHeading = Math.atan2(
-        GROUND_END.x - GROUND_START.x,
-        GROUND_END.z - GROUND_START.z,
+        groundEnd.x - groundStart.x,
+        groundEnd.z - groundStart.z,
       );
     } else if (behavior.phase === "flyingUp") {
       // Take a short arcing flight from the path to a low perch.
       const progress = behavior.progress;
-      desiredHeading = flyBetween(robin.current, GROUND_END, PERCH, progress);
+      desiredHeading = flyBetween(robin.current, groundEnd, perch, progress);
       flightEffort = Math.sin(progress * Math.PI);
     } else if (behavior.phase === "perching") {
       // Rest on the perch with small breathing motion.
-      robin.current.position.copy(PERCH);
+      robin.current.position.copy(perch);
       robin.current.position.y += Math.sin(phaseTime * 2.4) * 0.018;
       desiredHeading =
         -1.15 + Math.sin(phaseTime * 0.8) * 0.18 + behavior.variation * 0.24;
     } else if (behavior.phase === "flyingDown") {
       // Fly back toward the path along the reverse arc.
       const progress = behavior.progress;
-      desiredHeading = flyBetween(robin.current, PERCH, GROUND_START, progress);
+      desiredHeading = flyBetween(robin.current, perch, nextGround, progress);
       flightEffort = Math.sin(progress * Math.PI);
     } else {
       // Pause on the path and look around before hopping again.
-      robin.current.position.copy(GROUND_START);
+      robin.current.position.copy(nextGround);
       robin.current.position.y += Math.sin(phaseTime * 2.2) * 0.012;
       desiredHeading =
         0.2 + Math.sin(phaseTime * 1.1) * 0.35 + behavior.variation * 0.2;
@@ -162,26 +207,8 @@ export function Robin({
   // Render the robin from lightweight rounded primitives.
   return (
     <>
-      {/* Give the flight route a physical destination instead of an invisible perch. */}
-      <group position={[PERCH.x, 0, PERCH.z]}>
-        {/* A slender weathered stem supports the low horizontal branch. */}
-        <mesh position={[0, 0.74, 0]}>
-          <cylinderGeometry args={[0.085, 0.14, 1.48, 8]} />
-          <meshStandardMaterial color="#54412d" roughness={1} />
-        </mesh>
-        {/* The robin's feet land on this branch at the end of the flight arc. */}
-        <mesh position={[-0.22, 1.48, 0]} rotation={[0, 0, Math.PI / 2]}>
-          <cylinderGeometry args={[0.065, 0.09, 0.86, 8]} />
-          <meshStandardMaterial color="#624a32" roughness={1} />
-        </mesh>
-        {/* A short angled twig keeps the perch from looking manufactured. */}
-        <mesh position={[-0.5, 1.68, 0]} rotation={[0, 0, -0.55]}>
-          <cylinderGeometry args={[0.028, 0.045, 0.48, 7]} />
-          <meshStandardMaterial color="#624a32" roughness={1} />
-        </mesh>
-      </group>
       {/* This group holds and moves every visible part of the robin. */}
-      <group ref={robin} position={GROUND_START.toArray()} scale={0.34}>
+      <group ref={robin} position={ROBIN_HOME.toArray()} scale={0.34}>
         {/* This box follows both the robin's ground route and curved flights. */}
         <GardenInteractionTarget
           item={item}
