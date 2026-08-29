@@ -6,6 +6,8 @@ import * as THREE from "three";
 import { GardenInteractionTarget } from "../interaction/GardenInteractionTarget";
 // The memory object gives this visual flower an identity and inspectable content.
 import type { FlowerMemory } from "./flower-memory";
+// A dedicated component gives each leaf a pointed silhouette and visible vein.
+import { FlowerLeaf } from "./FlowerLeaf";
 
 // These values describe one procedural flower instance.
 type FlowerProps = {
@@ -81,11 +83,18 @@ export function Flower({
         {/* A rough green material keeps the stem from looking plastic. */}
         <meshStandardMaterial color="#34543a" roughness={0.9} />
       </mesh>
-      {/* A squashed, rotated sphere becomes a simple leaf. */}
-      <mesh position={[-0.14, 0.5, 0]} rotation={[0, 0, -0.8]}>
-        <sphereGeometry args={[0.2, 12, 8]} />
-        <meshStandardMaterial color="#55764d" roughness={1} />
-      </mesh>
+      {/* The lower leaf grows outward from the left side of the stem. */}
+      <FlowerLeaf
+        position={[-0.18, 0.67, 0]}
+        rotation={[0.12, -0.28, 0.85]}
+        scale={0.9}
+      />
+      {/* A smaller opposite leaf breaks symmetry and fills the upper stem. */}
+      <FlowerLeaf
+        position={[0.15, 0.91, 0.01]}
+        rotation={[-0.1, 0.24, -0.85]}
+        scale={0.72}
+      />
       {/* This group holds the entire flower head above the stem. */}
       <group
         position={[0, 1.42, 0]}
