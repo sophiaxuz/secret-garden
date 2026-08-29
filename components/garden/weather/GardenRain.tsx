@@ -112,14 +112,14 @@ export function GardenRain({ weather }: { weather: GardenWeather }) {
       userData={{ shadowCaster: false }}
     >
       {/* Four radial sides make each distant streak fine and inexpensive. */}
-      <cylinderGeometry args={[0.005, 0.009, 0.44, 4]} />
-      {/* Normal transparency layers rain-grey water without glowing white overlaps. */}
+      <cylinderGeometry args={[0.006, 0.011, 0.5, 4]} />
+      {/* Low additive light gives rain presence without restoring the white glare. */}
       <meshBasicMaterial
-        color="#8299a3"
+        color="#89a7b4"
         transparent
-        opacity={0.16 + weather.rainIntensity * 0.12}
+        opacity={0.1 + weather.rainIntensity * 0.12}
         depthWrite={false}
-        blending={THREE.NormalBlending}
+        blending={THREE.AdditiveBlending}
       />
     </instancedMesh>
   );
