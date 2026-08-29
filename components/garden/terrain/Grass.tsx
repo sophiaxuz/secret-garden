@@ -4,7 +4,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 // One shared deterministic hash keeps procedural placements stable and consistent.
 import { seededUnit } from "../deterministic-random";
-// Shared dimensions keep every tuft inside the habitat and away from the path.
+// Shared dimensions keep every tuft inside the explorable island habitat.
 import { GARDEN_LAYOUT } from "../garden-layout";
 // This factory creates seven fine ribbon blades behind one reusable geometry.
 import { createGrassTuftGeometry } from "./grass-geometry";
@@ -18,15 +18,6 @@ const GRASS_COLORS = [
   new THREE.Color("#8a9b68"),
 ] as const;
 
-// Each record contains everything needed to transform and color one shared tuft.
-type GrassTuft = {
-  // Keep the original index so rotations, heights, and colors remain deterministic.
-  index: number;
-  // X and Z place the tuft horizontally within the garden.
-  x: number;
-  z: number;
-};
-
 // Render the complete field as one instanced mesh instead of hundreds of mesh objects.
 export function Grass() {
   // Calculate the tuft layout only when this module first enters the scene.
@@ -35,17 +26,15 @@ export function Grass() {
     const gardenWidth = GARDEN_LAYOUT.bounds.maxX - GARDEN_LAYOUT.bounds.minX;
     // Calculate the complete walkable depth for the same reason.
     const gardenDepth = GARDEN_LAYOUT.bounds.maxZ - GARDEN_LAYOUT.bounds.minZ;
-    // Build every candidate and discard only tufts that would cover the path.
+    // Build every candidate across the complete meadow, including its former path.
     return Array.from({ length: GRASS_TUFT_CANDIDATES }, (_, index) => {
       // Independent seeded values scatter X without visible rows or diagonals.
       const x = GARDEN_LAYOUT.bounds.minX + seededUnit(index, 1) * gardenWidth;
       // A different salt gives Z an unrelated but equally stable distribution.
       const z = GARDEN_LAYOUT.bounds.minZ + seededUnit(index, 2) * gardenDepth;
-      // Keep the middle clear so the grass does not cover the path.
-      if (Math.abs(x) < GARDEN_LAYOUT.pathWidth / 2 + 0.35) return null;
       // Retain only the small values needed to build this instance later.
       return { index, x, z };
-    }).filter((tuft): tuft is GrassTuft => tuft !== null);
+    });
   }, []);
   // Build one normalized seven-blade tuft shared by every field instance.
   const tuftGeometry = useMemo(() => createGrassTuftGeometry(), []);

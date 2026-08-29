@@ -64,7 +64,7 @@ The most important boundaries are:
 | `interaction/` | Target registration, raycasting, and inspection UI |
 | `lighting/` | UK time, Sun, Moon, drifting clouds, and world shadow policy |
 | `navigation/` | First-person input, boundaries, and collision |
-| `terrain/` | Organic island, sandy coast, animated sea, path, and grass rendering |
+| `terrain/` | Organic island, sandy coast, animated sea, and uninterrupted meadow |
 | `weather/` | Open-Meteo mapping, resilient client refresh, and instanced rain |
 
 `Garden.tsx` and `GardenWorld.tsx` are composition modules. Feature implementation should remain in the responsibility folder that owns it.

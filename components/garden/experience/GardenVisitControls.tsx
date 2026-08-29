@@ -42,8 +42,7 @@ export function GardenVisitControls({
             releases
           </span>
           <span className="touch-help">
-            drag to look · hold the path button to walk · tap garden life to
-            inspect
+            drag to look · hold the walk button · tap garden life to inspect
           </span>
         </span>
       </div>

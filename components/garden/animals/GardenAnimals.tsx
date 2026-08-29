@@ -80,7 +80,7 @@ export function GardenAnimals({
           targetedItemId,
         )}
       />
-      {/* The robin begins near the path before roaming between tree branches. */}
+      {/* The robin begins in the meadow before roaming between tree branches. */}
       <Robin
         animated={animated}
         {...interactionPropsFor(ANIMAL_IDENTITIES.robin, targetedItemId)}

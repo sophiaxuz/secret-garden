@@ -4,7 +4,7 @@ import { GardenAnimals } from "./animals/GardenAnimals";
 import { GardenFlora } from "./flora/GardenFlora";
 // GardenShadowGroup applies one shadow policy to the whole physical world.
 import { GardenShadowGroup } from "./lighting/GardenShadowGroup";
-// GardenTerrain owns the island, coast, animated sea, path, and meadow grass.
+// GardenTerrain owns the island, coast, animated sea, and uninterrupted meadow.
 import { GardenTerrain } from "./terrain/GardenTerrain";
 
 // Compose the three physical garden modules without owning feature implementation.

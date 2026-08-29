@@ -45,13 +45,13 @@ export const ANIMAL_HABITATS = {
     middle: [5.4, 1.55, -4.5],
     deep: [-6.5, 1.1, -13],
   },
-  // The robin first appears near the path before choosing changing destinations.
+  // The robin first appears in the entrance meadow before choosing destinations.
   robin: {
     groundStart: [2.8, 0.23, 8],
     // Threshold oak shelters the nest near the garden's remembered entrance.
     homeTreeId: "threshold-oak",
   },
-  // The squirrel forages west of the path before climbing the nearby Moss oak.
+  // The squirrel forages in western grass before climbing the nearby Moss oak.
   squirrel: {
     start: [-7.2, 0.26, -4.8],
     treeId: "moss-oak",
@@ -60,7 +60,7 @@ export const ANIMAL_HABITATS = {
   rabbit: {
     start: [8, 0.26, 4.8],
   },
-  // The dog first appears in the open western area beside the front path.
+  // The dog first appears in the open western entrance meadow.
   dog: {
     start: [-9.5, 0.46, 8.3],
   },

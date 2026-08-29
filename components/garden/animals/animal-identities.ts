@@ -53,7 +53,7 @@ export const ANIMAL_IDENTITIES = {
       note: "She carries a little warmth into the garden's deepest corner.",
     },
   },
-  // The robin's bright breast makes him the path's tiny morning keeper.
+  // The robin's bright breast makes him the meadow's tiny morning keeper.
   robin: {
     kind: "animal",
     id: "pip-robin",
@@ -83,7 +83,7 @@ export const ANIMAL_IDENTITIES = {
     id: "moss-dog",
     name: "Moss, the garden dog",
     latinName: "Canis lupus familiaris",
-    note: "He knows every turn of the path and is delighted that you are here.",
+    note: "He knows every corner of the meadow and is delighted that you are here.",
   },
   // The cat's deep route and quiet watching give her a private, observant voice.
   cat: {

@@ -9,9 +9,9 @@ import { GARDEN_TREES } from "./garden-trees";
 // Tree hides trunk, canopy, highlighting, and interaction geometry.
 import { Tree } from "./Tree";
 
-// Find a planted flower's place in several spacious plots beside the path.
+// Find a planted flower's place in several spacious meadow plots.
 function getPlantedFlowerPosition(index: number): [number, number, number] {
-  // Two consecutive flowers share a row on opposite sides of the path.
+  // Two consecutive flowers share a row on opposite sides of the central clearing.
   const pairIndex = Math.floor(index / 2);
   // Ten rows fill the garden from its entrance toward its deeper edge.
   const row = pairIndex % GARDEN_LAYOUT.plantedFlowers.rows;
@@ -19,7 +19,7 @@ function getPlantedFlowerPosition(index: number): [number, number, number] {
   const column =
     Math.floor(pairIndex / GARDEN_LAYOUT.plantedFlowers.rows) %
     GARDEN_LAYOUT.plantedFlowers.columns;
-  // Alternate the sign to place one flower on each side of the path.
+  // Alternate the sign to place one flower on each side of the clearing.
   const side = index % GARDEN_LAYOUT.plantedFlowers.sides ? 1 : -1;
   // Return a position that remains inside the shared walkable garden limits.
   return [side * (3.4 + column * 2.3), 0, 8.5 - row * 3.2];

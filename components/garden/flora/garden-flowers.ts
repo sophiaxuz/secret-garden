@@ -23,7 +23,7 @@ export const INITIAL_FLOWERS = [
       id: "moon-daisy",
       name: "Moon daisy",
       latinName: "Leucanthemum vulgare",
-      note: "A small brightness beside the path.",
+      note: "A small brightness in the entrance meadow.",
     },
   },
   {
@@ -85,7 +85,7 @@ export const INITIAL_FLOWERS = [
       id: "oxeye-daisy",
       name: "Oxeye daisy",
       latinName: "Leucanthemum vulgare",
-      note: "Still watching the path behind you.",
+      note: "Still watching the meadow behind you.",
     },
   },
 ] satisfies readonly GardenFlower[];

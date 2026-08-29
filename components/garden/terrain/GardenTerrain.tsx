@@ -4,7 +4,7 @@ import { useTexture } from "@react-three/drei";
 import { useLayoutEffect, useMemo } from "react";
 // Three supplies texture wrapping and color-space constants.
 import * as THREE from "three";
-// Shared dimensions keep the floor, path, grass, and navigation aligned.
+// Shared dimensions keep the island, sea, grass, and navigation aligned.
 import { GARDEN_LAYOUT } from "../garden-layout";
 // Grass hides thousands of procedural blades behind one instanced mesh.
 import { Grass } from "./Grass";
@@ -15,11 +15,8 @@ import { createGardenIslandShape } from "./garden-coastline";
 
 // Render every non-interactive surface that forms the garden terrain.
 export function GardenTerrain() {
-  // Load both project-owned surface materials through one cached texture request.
-  const [meadowTexture, pathTexture] = useTexture([
-    "/material-meadow.webp",
-    "/material-path.webp",
-  ]);
+  // Load the project-owned meadow material through Drei's texture cache.
+  const meadowTexture = useTexture("/material-meadow.webp");
   // Build the authored coastline once rather than reconstructing it on rerenders.
   const islandShape = useMemo(() => createGardenIslandShape(), []);
 
@@ -37,13 +34,7 @@ export function GardenTerrain() {
     meadowTexture.anisotropy = 8;
     // Upload the changed sampling settings on the next renderer update.
     meadowTexture.needsUpdate = true;
-    // Repeat the path texture separately at a finer gravel scale.
-    pathTexture.wrapS = pathTexture.wrapT = THREE.MirroredRepeatWrapping;
-    pathTexture.repeat.set(1.4, GARDEN_LAYOUT.pathLength / 3.2);
-    pathTexture.colorSpace = THREE.SRGBColorSpace;
-    pathTexture.anisotropy = 8;
-    pathTexture.needsUpdate = true;
-  }, [meadowTexture, pathTexture]);
+  }, [meadowTexture]);
 
   // A fragment groups terrain without adding an unnecessary transform node.
   return (
@@ -69,22 +60,10 @@ export function GardenTerrain() {
         receiveShadow
         userData={{ shadowCaster: false }}
       >
-        {/* The triangulated outline contains all walking bounds and both path ends. */}
+        {/* The triangulated outline contains the complete explorable meadow. */}
         <shapeGeometry args={[islandShape, 8]} />
         {/* High roughness makes the ground diffuse rather than reflective. */}
         <meshStandardMaterial map={meadowTexture} roughness={1} />
-      </mesh>
-      {/* A narrower plane sits slightly above the ground as a path. */}
-      <mesh
-        position={[0, 0.012, GARDEN_LAYOUT.pathCenterZ]}
-        rotation={[-Math.PI / 2, 0, 0]}
-        receiveShadow
-        userData={{ shadowCaster: false }}
-      >
-        <planeGeometry
-          args={[GARDEN_LAYOUT.pathWidth, GARDEN_LAYOUT.pathLength]}
-        />
-        <meshStandardMaterial map={pathTexture} roughness={0.96} />
       </mesh>
       {/* Render deterministic meadow tufts through one GPU-instanced mesh. */}
       <Grass />

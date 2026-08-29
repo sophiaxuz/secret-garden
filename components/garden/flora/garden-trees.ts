@@ -89,9 +89,9 @@ export const GARDEN_TREES = [
     item: {
       kind: "tree",
       id: "pathkeeper-maple",
-      name: "Pathkeeper maple",
+      name: "Meadowkeeper maple",
       latinName: "Acer campestre",
-      note: "It watches the path bend deeper than a visitor first expects.",
+      note: "It watches the meadow deepen farther than a visitor first expects.",
     },
     visual: {
       foliage: ["#5b7244", "#778652", "#98945f"],

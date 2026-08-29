@@ -72,7 +72,7 @@ export function Sea() {
   // A highly subdivided plane gives the GPU enough vertices for gentle wave shape.
   return (
     <mesh
-      position={[0, GARDEN_LAYOUT.seaLevel, GARDEN_LAYOUT.pathCenterZ]}
+      position={[0, GARDEN_LAYOUT.seaLevel, GARDEN_LAYOUT.seaCenterZ]}
       rotation={[-Math.PI / 2, 0, 0]}
       userData={{ shadowCaster: false }}
     >

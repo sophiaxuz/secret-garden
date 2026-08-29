@@ -162,7 +162,7 @@ export function Robin({
         groundEnd.z - groundStart.z,
       );
     } else if (behavior.phase === "flyingUp") {
-      // Take a short arcing flight from the path to a low perch.
+      // Take a short arcing flight from the meadow to a tree perch.
       const progress = behavior.progress;
       desiredHeading = flyBetween(robin.current, groundEnd, perch, progress);
       flightEffort = Math.sin(progress * Math.PI);
@@ -173,12 +173,12 @@ export function Robin({
       desiredHeading =
         -1.15 + Math.sin(phaseTime * 0.8) * 0.18 + behavior.variation * 0.24;
     } else if (behavior.phase === "flyingDown") {
-      // Fly back toward the path along the reverse arc.
+      // Fly back toward a fresh meadow patch along the reverse arc.
       const progress = behavior.progress;
       desiredHeading = flyBetween(robin.current, perch, nextGround, progress);
       flightEffort = Math.sin(progress * Math.PI);
     } else {
-      // Pause on the path and look around before hopping again.
+      // Pause in the meadow and look around before hopping again.
       robin.current.position.copy(nextGround);
       robin.current.position.y += Math.sin(phaseTime * 2.2) * 0.012;
       desiredHeading =
@@ -268,7 +268,7 @@ export function Robin({
             <meshStandardMaterial color="#26231d" roughness={0.9} />
           </mesh>
         </group>
-        {/* Two simple legs make ground hops visually connect with the path. */}
+        {/* Two simple legs make ground hops visually connect with the meadow. */}
         <mesh position={[-0.15, -0.55, 0.08]}>
           <cylinderGeometry args={[0.025, 0.025, 0.32, 6]} />
           <meshStandardMaterial color="#34291f" roughness={1} />

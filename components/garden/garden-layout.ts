@@ -9,10 +9,8 @@ export const GARDEN_LAYOUT = {
   seaSize: 180,
   // A small drop keeps wave crests beneath the island's sandy shoreline.
   seaLevel: -0.38,
-  // The path leads from the entrance into the deepest part of the garden.
-  pathWidth: 2.4,
-  pathLength: 42,
-  pathCenterZ: -5,
+  // Center the distant water around the island's slightly deeper northern half.
+  seaCenterZ: -5,
   // These limits leave a natural border between visitors and the ground edge.
   bounds: {
     minX: -18,
@@ -20,7 +18,7 @@ export const GARDEN_LAYOUT = {
     minZ: -24,
     maxZ: 13,
   },
-  // Begin near the path entrance at an average standing eye height.
+  // Begin in the entrance meadow at an average standing eye height.
   entrance: {
     x: 0,
     y: 1.62,
