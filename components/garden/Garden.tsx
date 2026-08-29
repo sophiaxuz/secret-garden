@@ -25,6 +25,8 @@ import { GardenClock } from "./lighting/GardenClock";
 import { GardenLighting } from "./lighting/GardenLighting";
 // This hook updates a London-based astronomical snapshot once per second.
 import { useUkGardenTime } from "./lighting/use-uk-garden-time";
+// This hook keeps one resilient live London weather snapshot for the scene and HUD.
+import { useGardenWeather } from "./weather/use-garden-weather";
 // The UI and 3D objects share one inspectable garden identity.
 import {
   GARDEN_ITEM_LANGUAGE,
@@ -47,6 +49,8 @@ export default function Garden({ plantedCount, entered }: GardenProps) {
   const [selectedItem, setSelectedItem] = useState<GardenItem | null>(null);
   // Share one live UK snapshot between the WebGL sky and the HTML clock.
   const gardenTime = useUkGardenTime();
+  // Share one weather snapshot between clouds, rain, sunlight, and its visible label.
+  const gardenWeather = useGardenWeather();
 
   // Keep this callback stable so GardenInteraction does not reattach its listeners.
   const inspectItem = useCallback((item: GardenItem) => {
@@ -76,7 +80,7 @@ export default function Garden({ plantedCount, entered }: GardenProps) {
         shadows="soft"
       >
         {/* Make atmosphere and shadow direction follow the live UK sky. */}
-        <GardenLighting time={gardenTime} />
+        <GardenLighting time={gardenTime} weather={gardenWeather} />
         {/* Share one narrow interaction registry between life and raycaster. */}
         <GardenInteractionRegistryProvider>
           {/* Pass the target id down so the matching garden life can glow. */}
@@ -101,7 +105,7 @@ export default function Garden({ plantedCount, entered }: GardenProps) {
       </Canvas>
 
       {/* Keep civil time visible without placing HTML inside the WebGL canvas. */}
-      <GardenClock time={gardenTime} />
+      <GardenClock time={gardenTime} weather={gardenWeather} />
 
       {/* Tell the visitor when the reticle is close enough to inspect garden life. */}
       {targetedItem && !selectedItem && (

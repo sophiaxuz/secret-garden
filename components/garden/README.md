@@ -16,6 +16,10 @@ flowchart LR
 
     Garden --> Clock["GardenClock<br/>HTML overlay"]
     Garden --> Canvas["React Three Fiber Canvas<br/>camera + render loop"]
+    Provider["Open-Meteo<br/>current London conditions"] --> Route["/api/weather<br/>validated + cached"]
+    Route --> Weather["weather/<br/>live hook + rain renderer"]
+    Weather --> Clock
+    Weather --> Lighting
     Time["UK date and time"] --> Lighting["GardenLighting<br/>sky + Sun/Moon + shadows"]
     Time --> Clock
 
@@ -43,6 +47,7 @@ The most important boundaries are:
 3. `GardenWorld.tsx` only composes physical scene modules; each responsibility folder owns its own implementation.
 4. Flora and animals register small interaction targets, so raycasting never searches the entire scene.
 5. UK time is one shared input for both the visible clock and the garden's celestial lighting.
+6. Live weather crosses a server-side validation boundary before it controls clouds, rain, visibility, sunlight, or the clock label.
 
 ## Module map
 
@@ -59,6 +64,7 @@ The most important boundaries are:
 | `lighting/` | UK time, Sun, Moon, drifting clouds, and world shadow policy |
 | `navigation/` | First-person input, boundaries, and collision |
 | `terrain/` | Ground, path, grass rendering, and grass geometry |
+| `weather/` | Open-Meteo mapping, resilient client refresh, and instanced rain |
 
 `Garden.tsx` and `GardenWorld.tsx` are composition modules. Feature implementation should remain in the responsibility folder that owns it.
 

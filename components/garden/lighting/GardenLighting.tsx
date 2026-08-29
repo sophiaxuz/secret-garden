@@ -6,11 +6,17 @@ import type { CelestialPosition, UkGardenTime } from "./uk-garden-time";
 import { GardenClouds } from "./GardenClouds";
 // GardenSun renders a soft solar disc and atmospheric corona at the real position.
 import { GardenSun } from "./GardenSun";
+// GardenRain renders live precipitation around the moving visitor.
+import { GardenRain } from "../weather/GardenRain";
+// The weather snapshot adjusts clouds, visibility, and direct sunlight together.
+import type { GardenWeather } from "../weather/garden-weather";
 
 // Describe the one synchronized snapshot needed by the whole atmosphere.
 type GardenLightingProps = {
   // Time contains positions, intensities, and colors calculated outside React.
   time: UkGardenTime;
+  // Weather contains the current London cloud, wind, and precipitation state.
+  weather: GardenWeather;
 };
 
 // Shared shadow bounds cover the explorable garden without wasting map detail.
@@ -57,10 +63,19 @@ function CelestialLight({
 }
 
 // Render a Sun by day, a Moon by night, and continuous twilight between them.
-export function GardenLighting({ time }: GardenLightingProps) {
+export function GardenLighting({ time, weather }: GardenLightingProps) {
+  // Dense cloud and rain soften direct sunlight while broad sky fill stays readable.
+  const weatherSunFactor = Math.max(
+    0.28,
+    1 - weather.cloudCover * 0.0055 - weather.rainIntensity * 0.18,
+  );
+  // Keep the astronomical light strength separate from its weather attenuation.
+  const visibleSunIntensity = time.sunIntensity * weatherSunFactor;
   // Only the dominant celestial light needs an expensive shadow map at once.
   const sunCastsShadow =
-    time.sunIntensity >= time.moonIntensity && time.sunIntensity > 0.03;
+    visibleSunIntensity >= time.moonIntensity &&
+    visibleSunIntensity > 0.03 &&
+    weather.cloudCover < 88;
   // The Moon takes over shadow casting after the Sun has gone below the horizon.
   const moonCastsShadow =
     time.moonIntensity > time.sunIntensity && time.moonIntensity > 0.03;
@@ -71,7 +86,14 @@ export function GardenLighting({ time }: GardenLightingProps) {
       {/* The clear color fills any pixels outside the atmospheric dome. */}
       <color attach="background" args={[time.skyColor]} />
       {/* Matching fog blends distant trees into the current horizon. */}
-      <fog attach="fog" args={[time.fogColor, 24, 58]} />
+      <fog
+        attach="fog"
+        args={[
+          time.fogColor,
+          24 - weather.rainIntensity * 5,
+          58 - weather.rainIntensity * 16,
+        ]}
+      />
       {/* The shader follows London's real solar path through the day and year. */}
       <Sky
         distance={450000}
@@ -80,7 +102,13 @@ export function GardenLighting({ time }: GardenLightingProps) {
         rayleigh={time.phase === "day" ? 2.2 : 1.1}
       />
       {/* Let broad cloud banks drift through the current UK light phase. */}
-      <GardenClouds phase={time.phase} />
+      <GardenClouds
+        phase={time.phase}
+        cloudCover={weather.cloudCover}
+        condition={weather.condition}
+      />
+      {/* Live precipitation follows the visitor instead of ending at one garden plot. */}
+      <GardenRain weather={weather} />
       {/* Ambient sky light keeps shaded surfaces legible without flattening them. */}
       <hemisphereLight
         intensity={time.hemisphereIntensity}
@@ -95,7 +123,7 @@ export function GardenLighting({ time }: GardenLightingProps) {
       {/* This directional source produces warm, moving daytime shadows. */}
       <CelestialLight
         position={time.sunPosition}
-        intensity={time.sunIntensity}
+        intensity={visibleSunIntensity}
         color={time.sunColor}
         castShadow={sunCastsShadow}
       />
@@ -111,7 +139,7 @@ export function GardenLighting({ time }: GardenLightingProps) {
         <GardenSun
           position={time.sunPosition}
           color={time.sunColor}
-          intensity={time.sunIntensity}
+          intensity={visibleSunIntensity}
         />
       )}
       {/* The opposing pale sphere becomes visible as night reaches the garden. */}

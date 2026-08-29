@@ -14,6 +14,8 @@ import {
 } from "./garden-clouds";
 // The current light phase lets clouds inherit daytime, twilight, or moonlight color.
 import type { GardenLightPhase } from "./uk-garden-time";
+// Weather conditions select cloud density and storm tint independently from time.
+import type { GardenWeatherCondition } from "../weather/garden-weather";
 
 // The towering sprite provides fuller cumulus silhouettes.
 const CUMULUS_TEXTURE_PATH = "/cloud-cumulus.png";
@@ -28,6 +30,10 @@ const WISPY_ASPECT_RATIO = 16 / 9;
 type GardenCloudsProps = {
   // Phase tints the same natural textures without rebuilding the cloud layout.
   phase: GardenLightPhase;
+  // Cloud cover controls how much of the authored sky is populated.
+  cloudCover: number;
+  // Condition distinguishes pearly fair-weather banks from wet storm-grey ones.
+  condition: GardenWeatherCondition;
 };
 
 // Describe the texture and atmospheric values required by one moving bank.
@@ -99,7 +105,11 @@ function FloatingCloudBank({
 }
 
 // Render varied, floating cloud silhouettes that follow the real-time light phase.
-export function GardenClouds({ phase }: GardenCloudsProps) {
+export function GardenClouds({
+  phase,
+  cloudCover,
+  condition,
+}: GardenCloudsProps) {
   // Load both local assets once and share their GPU textures across all five banks.
   const [cumulusTexture, wispyTexture] = useTexture([
     CUMULUS_TEXTURE_PATH,
@@ -119,21 +129,31 @@ export function GardenClouds({ phase }: GardenCloudsProps) {
 
   // Day stays neutral white while twilight and night borrow the sky palette.
   const cloudTint =
-    phase === "day"
-      ? "#ffffff"
-      : phase === "night"
-        ? "#8797b5"
-        : phase === "dawn"
-          ? "#f2d4c6"
-          : "#e7bbb7";
+    condition === "storm"
+      ? "#84939d"
+      : condition === "rain"
+        ? "#b4c1c5"
+        : phase === "day"
+          ? "#ffffff"
+          : phase === "night"
+            ? "#8797b5"
+            : phase === "dawn"
+              ? "#f2d4c6"
+              : "#e7bbb7";
   // Night clouds remain gentler so they do not compete with the Moon.
-  const cloudOpacity = phase === "night" ? 0.72 : 0.92;
+  const cloudOpacity =
+    (phase === "night" ? 0.58 : 0.68) + Math.min(0.28, cloudCover * 0.0028);
+  // Keep one picturesque bank on clear days and reveal all five when overcast.
+  const visibleCloudCount = Math.max(
+    1,
+    Math.min(CLOUD_BANKS.length, Math.ceil(cloudCover / 20)),
+  );
 
   // Stable descriptions preserve each cloud's identity as UK time updates.
   return (
     <>
       {/* Alternating assets prevent the skyline from repeating one silhouette. */}
-      {CLOUD_BANKS.map((bank) => {
+      {CLOUD_BANKS.slice(0, visibleCloudCount).map((bank) => {
         // Odd seeds use the broad fair-weather cloud; even seeds use cumulus.
         const usesWispyTexture = bank.seed % 2 !== 0;
         // Select the corresponding image and its native proportions together.
