@@ -8,11 +8,17 @@ import * as THREE from "three";
 import { GardenInteractionTarget } from "../../interaction/GardenInteractionTarget";
 // The squirrel uses the identity and highlight shared by all animals.
 import type { AnimatedAnimalProps } from "../animal-identities";
+// A variable outer clock changes when Hazel decides to begin the full journey.
+import { createAnimalRoutine, type AnimalRoutine } from "../animal-routine";
 // The pure motion seam owns Hazel's complete ground and tree-climbing journey.
-import { getSquirrelMotion } from "./squirrel-motion";
+import { getSquirrelMotion, SQUIRREL_CYCLE_SECONDS } from "./squirrel-motion";
 
 // This stable pose supplies both the initial render and reduced-motion fallback.
 const SQUIRREL_REST_POSE = getSquirrelMotion(0);
+// Preserve the safe climb sequence while varying its complete pace each cycle.
+const SQUIRREL_ROUTINE = [
+  { name: "journey", minDuration: 22, maxDuration: 36 },
+] as const;
 // Build a small squirrel pausing near the edge of the path.
 export function Squirrel({
   animated = true,
@@ -26,6 +32,16 @@ export function Squirrel({
   // Paw refs alternate during a running burst.
   const leftPaw = useRef<THREE.Mesh>(null);
   const rightPaw = useRef<THREE.Mesh>(null);
+  // Keep one visit-specific pace planner stable across interaction highlights.
+  const routine = useRef<AnimalRoutine<"journey"> | null>(null);
+  if (!routine.current) {
+    routine.current = createAnimalRoutine(
+      Math.random() * 10_000,
+      SQUIRREL_ROUTINE,
+    );
+  }
+  // Capture the initialized planner for the frame callback.
+  const behaviorRoutine = routine.current;
 
   // Animate the squirrel without causing React component rerenders.
   useFrame(({ clock }, delta) => {
@@ -50,8 +66,10 @@ export function Squirrel({
       rightPaw.current.rotation.x = 0.35;
       return;
     }
-    // Ask the public motion seam for this frame's meaningful world pose.
-    const pose = getSquirrelMotion(clock.elapsedTime);
+    // Stretch or compress the complete safe journey with a newly chosen duration.
+    const behavior = behaviorRoutine.advance(delta);
+    // Ask the public motion seam for the equivalent point in its tested cycle.
+    const pose = getSquirrelMotion(behavior.progress * SQUIRREL_CYCLE_SECONDS);
     // Place Hazel directly on the continuous ground, trunk, or branch path.
     squirrel.current.position.set(...pose.position);
 

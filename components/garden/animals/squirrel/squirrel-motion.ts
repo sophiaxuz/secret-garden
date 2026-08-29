@@ -10,7 +10,7 @@ import {
 import { ANIMAL_HABITATS, type HabitatPoint } from "../animal-habitats";
 
 // One complete behavior loop includes rest, travel, climbing, and branch time.
-const SQUIRREL_CYCLE_SECONDS = 26;
+export const SQUIRREL_CYCLE_SECONDS = 26;
 // Ground height matches the squirrel's established habitat anchor.
 const GROUND_Y = ANIMAL_HABITATS.squirrel.start[1];
 

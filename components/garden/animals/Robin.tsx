@@ -8,6 +8,8 @@ import * as THREE from "three";
 import { GardenInteractionTarget } from "../interaction/GardenInteractionTarget";
 // Shared habitat data keeps the robin's ground route and perch easy to relocate.
 import { ANIMAL_HABITATS, createHabitatVector } from "./animal-habitats";
+// The shared planner varies hops, perch pauses, and attention across each visit.
+import { createAnimalRoutine, type AnimalRoutine } from "./animal-routine";
 // The robin uses the same identity and highlight interface as every animal.
 import type { AnimatedAnimalProps } from "./animal-identities";
 
@@ -15,6 +17,17 @@ import type { AnimatedAnimalProps } from "./animal-identities";
 const GROUND_START = createHabitatVector(ANIMAL_HABITATS.robin.groundStart);
 const GROUND_END = createHabitatVector(ANIMAL_HABITATS.robin.groundEnd);
 const PERCH = createHabitatVector(ANIMAL_HABITATS.robin.perch);
+
+// The wide perch range makes each sudden takeoff difficult to anticipate exactly.
+const ROBIN_ROUTINE = [
+  { name: "hopping", minDuration: 3, maxDuration: 7 },
+  { name: "flyingUp", minDuration: 2.2, maxDuration: 3.8 },
+  { name: "perching", minDuration: 2.5, maxDuration: 10 },
+  { name: "flyingDown", minDuration: 2.2, maxDuration: 3.8 },
+  { name: "watching", minDuration: 1.5, maxDuration: 6 },
+] as const;
+// Derive the valid routine vocabulary from the authored phases.
+type RobinRoutineName = (typeof ROBIN_ROUTINE)[number]["name"];
 
 // Copy an interpolated position and add a curved flight arc.
 function flyBetween(
@@ -46,8 +59,18 @@ export function Robin({
   // Wing groups unfold and flap during the flight phases.
   const leftWing = useRef<THREE.Group>(null);
   const rightWing = useRef<THREE.Group>(null);
+  // A visit-specific personality prevents the robin replaying one fixed film.
+  const routine = useRef<AnimalRoutine<RobinRoutineName> | null>(null);
+  if (!routine.current) {
+    routine.current = createAnimalRoutine(
+      Math.random() * 10_000,
+      ROBIN_ROUTINE,
+    );
+  }
+  // Capture the initialized planner for the frame callback.
+  const behaviorRoutine = routine.current;
 
-  // Run an eighteen-second hop, fly, perch, and return sequence.
+  // Run an open-ended hop, fly, perch, and return routine.
   useFrame(({ clock }, delta) => {
     // Wait until every animated group exists in the scene.
     if (
@@ -66,20 +89,23 @@ export function Robin({
       rightWing.current.rotation.z = -0.43;
       return;
     }
-    // Loop the behavior without requiring React state updates.
-    const cycle = clock.elapsedTime % 18;
+    // Advance the robin's current variable-duration decision.
+    const behavior = behaviorRoutine.advance(delta);
+    const phaseTime = behavior.phaseTime;
     // Track whether wings should be visibly flapping this frame.
-    const flying = (cycle >= 5 && cycle < 8) || (cycle >= 12 && cycle < 15);
+    const flying =
+      behavior.phase === "flyingUp" || behavior.phase === "flyingDown";
     // Begin with the current heading so each behavioral phase can choose a target.
     let desiredHeading = robin.current.rotation.y;
     // Ease wing effort in after takeoff and out before landing.
     let flightEffort = 0;
 
-    if (cycle < 5) {
-      // Divide the ground phase into four distinct hops.
-      const hopNumber = Math.min(3, Math.floor(cycle / 1.25));
-      const hopProgress = (cycle % 1.25) / 1.25;
-      const routeProgress = (hopNumber + hopProgress) / 4;
+    if (behavior.phase === "hopping") {
+      // Choose between three and six hops for this particular ground crossing.
+      const hopCount = 3 + Math.floor((behavior.variation + 1) * 1.75);
+      const scaledHops = behavior.progress * hopCount;
+      const hopProgress = scaledHops % 1;
+      const routeProgress = behavior.progress;
       // Move forward steadily while the sine curve lifts each hop.
       robin.current.position.lerpVectors(
         GROUND_START,
@@ -91,26 +117,28 @@ export function Robin({
         GROUND_END.x - GROUND_START.x,
         GROUND_END.z - GROUND_START.z,
       );
-    } else if (cycle < 8) {
+    } else if (behavior.phase === "flyingUp") {
       // Take a short arcing flight from the path to a low perch.
-      const progress = (cycle - 5) / 3;
+      const progress = behavior.progress;
       desiredHeading = flyBetween(robin.current, GROUND_END, PERCH, progress);
       flightEffort = Math.sin(progress * Math.PI);
-    } else if (cycle < 12) {
+    } else if (behavior.phase === "perching") {
       // Rest on the perch with small breathing motion.
       robin.current.position.copy(PERCH);
-      robin.current.position.y += Math.sin(cycle * 2.4) * 0.018;
-      desiredHeading = -1.15 + Math.sin(cycle * 0.8) * 0.18;
-    } else if (cycle < 15) {
+      robin.current.position.y += Math.sin(phaseTime * 2.4) * 0.018;
+      desiredHeading =
+        -1.15 + Math.sin(phaseTime * 0.8) * 0.18 + behavior.variation * 0.24;
+    } else if (behavior.phase === "flyingDown") {
       // Fly back toward the path along the reverse arc.
-      const progress = (cycle - 12) / 3;
+      const progress = behavior.progress;
       desiredHeading = flyBetween(robin.current, PERCH, GROUND_START, progress);
       flightEffort = Math.sin(progress * Math.PI);
     } else {
       // Pause on the path and look around before hopping again.
       robin.current.position.copy(GROUND_START);
-      robin.current.position.y += Math.sin(cycle * 2.2) * 0.012;
-      desiredHeading = 0.2 + Math.sin(cycle * 1.1) * 0.35;
+      robin.current.position.y += Math.sin(phaseTime * 2.2) * 0.012;
+      desiredHeading =
+        0.2 + Math.sin(phaseTime * 1.1) * 0.35 + behavior.variation * 0.2;
     }
 
     // Measure the shortest signed angle so turns never spin the long way around.
@@ -121,7 +149,8 @@ export function Robin({
     // Blend toward the target direction instead of snapping between phases.
     robin.current.rotation.y += headingDifference * Math.min(1, delta * 4.5);
     // Turn the head more quickly than the body to create alert bird behavior.
-    head.current.rotation.y = Math.sin(cycle * 2.1) * 0.32;
+    head.current.rotation.y =
+      Math.sin(phaseTime * 2.1) * 0.32 + behavior.variation * 0.12;
     // Fold wings against the body on the ground and open them in flight.
     const flap = flying
       ? 0.08 + Math.sin(clock.elapsedTime * 18) * 0.85 * flightEffort

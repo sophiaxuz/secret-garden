@@ -8,6 +8,8 @@ import * as THREE from "three";
 import { GardenInteractionTarget } from "../../interaction/GardenInteractionTarget";
 // Shared habitat data keeps the rabbit's route easy to relocate with the garden.
 import { ANIMAL_HABITATS, createRoundTripRoute } from "../animal-habitats";
+// The shared planner varies pauses and attention choices across every visit.
+import { createAnimalRoutine, type AnimalRoutine } from "../animal-routine";
 // The rabbit uses the identity and highlight shared by all animals.
 import type { AnimatedAnimalProps } from "../animal-identities";
 // RabbitModel keeps all visible mesh geometry out of this behavior module.
@@ -20,6 +22,16 @@ const {
   outboundHeading: OUTBOUND_HEADING,
   returnHeading: RETURN_HEADING,
 } = createRoundTripRoute(ANIMAL_HABITATS.rabbit);
+
+// Wide listening ranges make an abrupt bound feel like a genuine surprise.
+const RABBIT_ROUTINE = [
+  { name: "nibbling", minDuration: 2, maxDuration: 7 },
+  { name: "outbound", minDuration: 2.8, maxDuration: 4.8 },
+  { name: "listening", minDuration: 2, maxDuration: 8 },
+  { name: "returning", minDuration: 2.8, maxDuration: 4.8 },
+] as const;
+// Derive valid names directly from the species schedule.
+type RabbitRoutineName = (typeof RABBIT_ROUTINE)[number]["name"];
 
 // Build a little garden rabbit that nibbles, listens, and bounds through grass.
 export function Rabbit({
@@ -34,6 +46,16 @@ export function Rabbit({
   // Ear refs create separate alert twitches.
   const leftEar = useRef<THREE.Mesh>(null);
   const rightEar = useRef<THREE.Mesh>(null);
+  // Keep a visit-specific personality without rerendering on every decision.
+  const routine = useRef<AnimalRoutine<RabbitRoutineName> | null>(null);
+  if (!routine.current) {
+    routine.current = createAnimalRoutine(
+      Math.random() * 10_000,
+      RABBIT_ROUTINE,
+    );
+  }
+  // Capture the initialized planner so the frame callback sees a non-null routine.
+  const behaviorRoutine = routine.current;
   // Package the model's internal attachment points behind one private interface.
   const rig: RabbitRig = { head, leftEar, rightEar };
 
@@ -57,40 +79,51 @@ export function Rabbit({
       return;
     }
 
-    // Wrap elapsed time so the behavior repeats forever.
-    const cycle = clock.elapsedTime % 16;
+    // Advance one variable-duration phase while preserving frame-rate independence.
+    const behavior = behaviorRoutine.advance(delta);
+    const phaseTime = behavior.phaseTime;
     // Begin with the current pose and let each phase choose new targets.
     let desiredHeading = rabbit.current.rotation.y;
     let desiredHeadPitch = head.current.rotation.x;
     let boundEnergy = 0;
 
-    if (cycle < 4) {
+    if (behavior.phase === "nibbling") {
       // Stay near the first patch while making small nibbling movements.
       rabbit.current.position.copy(RABBIT_START);
-      rabbit.current.position.y += Math.sin(cycle * 2.4) * 0.012;
+      rabbit.current.position.y += Math.sin(phaseTime * 2.4) * 0.012;
       desiredHeading = OUTBOUND_HEADING;
-      desiredHeadPitch = 0.2 + Math.abs(Math.sin(cycle * 2.8)) * 0.2;
-    } else if (cycle < 8) {
+      desiredHeadPitch =
+        0.2 +
+        Math.abs(Math.sin(phaseTime * (2.6 + behavior.variation * 0.35))) * 0.2;
+    } else if (behavior.phase === "outbound") {
       // Bound toward the second patch with smooth acceleration and landing.
-      const progress = (cycle - 4) / 4;
+      const progress = behavior.progress;
       const eased = THREE.MathUtils.smoothstep(progress, 0, 1);
       rabbit.current.position.lerpVectors(RABBIT_START, RABBIT_END, eased);
+      // A gentle curve makes consecutive bounds choose different grass gaps.
+      rabbit.current.position.x +=
+        Math.sin(progress * Math.PI) * behavior.variation * 0.55;
       rabbit.current.position.y +=
         Math.abs(Math.sin(progress * Math.PI * 5)) * 0.24;
       desiredHeading = OUTBOUND_HEADING;
       desiredHeadPitch = -0.08;
       boundEnergy = Math.sin(progress * Math.PI);
-    } else if (cycle < 12) {
+    } else if (behavior.phase === "listening") {
       // Sit at the far patch and scan for sounds before returning.
       rabbit.current.position.copy(RABBIT_END);
-      rabbit.current.position.y += Math.sin(cycle * 2) * 0.01;
-      desiredHeading = RETURN_HEADING + Math.sin(cycle * 0.85) * 0.22;
+      rabbit.current.position.y += Math.sin(phaseTime * 2) * 0.01;
+      desiredHeading =
+        RETURN_HEADING +
+        Math.sin(phaseTime * 0.85) * 0.22 +
+        behavior.variation * 0.22;
       desiredHeadPitch = -0.05;
     } else {
       // Follow the same soft bounding gait back to the first patch.
-      const progress = (cycle - 12) / 4;
+      const progress = behavior.progress;
       const eased = THREE.MathUtils.smoothstep(progress, 0, 1);
       rabbit.current.position.lerpVectors(RABBIT_END, RABBIT_START, eased);
+      rabbit.current.position.x +=
+        Math.sin(progress * Math.PI) * behavior.variation * 0.55;
       rabbit.current.position.y +=
         Math.abs(Math.sin(progress * Math.PI * 5)) * 0.24;
       desiredHeading = RETURN_HEADING;

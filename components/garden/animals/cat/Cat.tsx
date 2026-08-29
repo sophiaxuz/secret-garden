@@ -8,6 +8,8 @@ import * as THREE from "three";
 import { GardenInteractionTarget } from "../../interaction/GardenInteractionTarget";
 // Shared habitat data keeps the cat's patrol easy to relocate with the garden.
 import { ANIMAL_HABITATS, createRoundTripRoute } from "../animal-habitats";
+// The shared planner varies pauses and attention choices across every visit.
+import { createAnimalRoutine, type AnimalRoutine } from "../animal-routine";
 // The cat uses the identity and highlight shared by all animals.
 import type { AnimatedAnimalProps } from "../animal-identities";
 // CatModel keeps all visible mesh geometry out of this behavior module.
@@ -20,6 +22,17 @@ const {
   outboundHeading: OUTBOUND_HEADING,
   returnHeading: RETURN_HEADING,
 } = createRoundTripRoute(ANIMAL_HABITATS.cat);
+
+// A cat may watch for a long time, then unexpectedly decide to prowl.
+const CAT_ROUTINE = [
+  { name: "watching", minDuration: 2.5, maxDuration: 9 },
+  { name: "outbound", minDuration: 4, maxDuration: 7 },
+  { name: "sitting", minDuration: 3, maxDuration: 10 },
+  { name: "returning", minDuration: 4, maxDuration: 7 },
+  { name: "settling", minDuration: 1, maxDuration: 4 },
+] as const;
+// Derive valid names directly from the schedule authoring data.
+type CatRoutineName = (typeof CAT_ROUTINE)[number]["name"];
 
 // Build a grey tabby that watches, prowls, pauses, and returns.
 export function Cat({
@@ -42,6 +55,13 @@ export function Cat({
   // Hind-leg refs fold for sitting and join the walking gait.
   const leftHindLeg = useRef<THREE.Mesh>(null);
   const rightHindLeg = useRef<THREE.Mesh>(null);
+  // Keep one random personality stable throughout this mounted garden visit.
+  const routine = useRef<AnimalRoutine<CatRoutineName> | null>(null);
+  if (!routine.current) {
+    routine.current = createAnimalRoutine(Math.random() * 10_000, CAT_ROUTINE);
+  }
+  // Capture the initialized planner so the frame callback sees a non-null routine.
+  const behaviorRoutine = routine.current;
   // Package the model's internal attachment points behind one private interface.
   const rig: CatRig = {
     body,
@@ -85,8 +105,9 @@ export function Cat({
       return;
     }
 
-    // Wrap time into one repeating patrol cycle.
-    const cycle = clock.elapsedTime % 20;
+    // Advance the current unpredictable decision by this rendered frame.
+    const behavior = behaviorRoutine.advance(delta);
+    const phaseTime = behavior.phaseTime;
     // Store phase targets before applying shared smoothing.
     let desiredHeading = cat.current.rotation.y;
     let desiredHeadTurn = 0;
@@ -94,36 +115,43 @@ export function Cat({
     let prowlEnergy = 0;
     let sittingEnergy = 0;
 
-    if (cycle < 4) {
+    if (behavior.phase === "watching") {
       // Crouch near the first patch and watch the nearby path.
       cat.current.position.copy(CAT_START);
-      cat.current.position.y += Math.sin(cycle * 1.6) * 0.008;
+      cat.current.position.y += Math.sin(phaseTime * 1.6) * 0.008;
       desiredHeading = OUTBOUND_HEADING;
-      desiredHeadTurn = Math.sin(cycle * 0.75) * 0.38;
+      desiredHeadTurn =
+        Math.sin(phaseTime * 0.75) * 0.38 + behavior.variation * 0.24;
       desiredBodyPitch = 0.04;
-    } else if (cycle < 9) {
+    } else if (behavior.phase === "outbound") {
       // Prowl toward the shaded end with smooth, low steps.
-      const progress = (cycle - 4) / 5;
+      const progress = behavior.progress;
       const eased = THREE.MathUtils.smoothstep(progress, 0, 1);
       cat.current.position.lerpVectors(CAT_START, CAT_END, eased);
+      // Each stalk bows toward a different imagined sound in the grass.
+      cat.current.position.x +=
+        Math.sin(progress * Math.PI) * behavior.variation * 0.5;
       cat.current.position.y +=
         Math.abs(Math.sin(progress * Math.PI * 7)) * 0.035;
       desiredHeading = OUTBOUND_HEADING;
       desiredBodyPitch = 0.06;
       prowlEnergy = Math.sin(progress * Math.PI);
-    } else if (cycle < 14) {
+    } else if (behavior.phase === "sitting") {
       // Sit quietly at the far end and follow sounds with the head.
       cat.current.position.copy(CAT_END);
-      cat.current.position.y += Math.sin(cycle * 1.8) * 0.008;
+      cat.current.position.y += Math.sin(phaseTime * 1.8) * 0.008;
       desiredHeading = RETURN_HEADING;
-      desiredHeadTurn = Math.sin(cycle * 0.95) * 0.46;
+      desiredHeadTurn =
+        Math.sin(phaseTime * 0.95) * 0.46 + behavior.variation * 0.28;
       desiredBodyPitch = -0.06;
       sittingEnergy = 1;
-    } else if (cycle < 19) {
+    } else if (behavior.phase === "returning") {
       // Return with the same deliberate stalking gait.
-      const progress = (cycle - 14) / 5;
+      const progress = behavior.progress;
       const eased = THREE.MathUtils.smoothstep(progress, 0, 1);
       cat.current.position.lerpVectors(CAT_END, CAT_START, eased);
+      cat.current.position.x +=
+        Math.sin(progress * Math.PI) * behavior.variation * 0.5;
       cat.current.position.y +=
         Math.abs(Math.sin(progress * Math.PI * 7)) * 0.035;
       desiredHeading = RETURN_HEADING;
@@ -133,7 +161,7 @@ export function Cat({
       // Settle at the start before beginning another watch.
       cat.current.position.copy(CAT_START);
       desiredHeading = OUTBOUND_HEADING;
-      desiredHeadTurn = 0.12;
+      desiredHeadTurn = 0.12 + behavior.variation * 0.16;
     }
 
     // Measure the shortest signed angle between both body directions.

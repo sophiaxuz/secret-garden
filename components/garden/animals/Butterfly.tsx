@@ -32,6 +32,12 @@ export function Butterfly({
   // These refs animate the left and right wing pairs independently.
   const leftWing = useRef<THREE.Group>(null);
   const rightWing = useRef<THREE.Group>(null);
+  // Each mounted butterfly receives a stable but visit-specific wandering character.
+  const personality = useRef({
+    pace: 0.82 + Math.random() * 0.36,
+    wideDrift: Math.random() * Math.PI * 2,
+    turnDrift: Math.random() * Math.PI * 2,
+  }).current;
 
   // Update position, orientation, and wing angle before every frame.
   useFrame(({ clock }) => {
@@ -46,15 +52,26 @@ export function Butterfly({
       return;
     }
     // Add a phase offset so multiple butterflies do not move in formation.
-    const time = clock.elapsedTime + phase;
-    // Drift around the origin in a loose horizontal figure-eight.
+    const time = clock.elapsedTime * personality.pace + phase;
+    // Layer slow independent drift over the figure-eight so its route does not repeat.
+    const wanderingX =
+      Math.sin(time * 0.45) * 1.25 +
+      Math.sin(time * 0.13 + personality.wideDrift) * 0.5;
+    const wanderingZ =
+      Math.sin(time * 0.3) * Math.cos(time * 0.45) * 1.45 +
+      Math.cos(time * 0.17 + personality.turnDrift) * 0.55;
+    // Drift around the origin on its own layered, visit-specific path.
     butterfly.current.position.set(
-      origin[0] + Math.sin(time * 0.45) * 1.4,
-      origin[1] + Math.sin(time * 1.1) * 0.28,
-      origin[2] + Math.sin(time * 0.3) * Math.cos(time * 0.45) * 1.6,
+      origin[0] + wanderingX,
+      origin[1] +
+        Math.sin(time * 1.1) * 0.24 +
+        Math.sin(time * 0.23 + personality.wideDrift) * 0.1,
+      origin[2] + wanderingZ,
     );
     // Face approximately along the current curved flight path.
-    butterfly.current.rotation.y = Math.cos(time * 0.45) * 0.8;
+    butterfly.current.rotation.y =
+      Math.cos(time * 0.45) * 0.7 +
+      Math.sin(time * 0.17 + personality.turnDrift) * 0.28;
     // Oscillate both wings in opposite directions to create flapping.
     const flap = Math.sin(time * 10) * 0.65;
     leftWing.current.rotation.y = flap;

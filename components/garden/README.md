@@ -31,6 +31,7 @@ flowchart LR
     World --> Terrain["terrain/<br/>ground + path + grass"]
     World --> Flora["flora/<br/>flowers + trees"]
     World --> Animals["animals/<br/>models + habitats + motion"]
+    Routine["animal-routine<br/>variable phases + stable choices"] --> Animals
 
     Flora --> Targets["GardenInteractionTarget<br/>small invisible hit volumes"]
     Animals --> Targets
@@ -56,7 +57,7 @@ The most important boundaries are:
 | `Garden.tsx` | The public 3D garden interface used by the experience |
 | `GardenWorld.tsx` | Composition of terrain, flora, and animals |
 | `garden-layout.ts` | Dimensions shared by rendering and movement |
-| `animals/` | Animal models, animation, identities, and habitats |
+| `animals/` | Animal models, animation, identities, habitats, and variable behavior routines |
 | `audio/` | The browser Web Audio soundscape |
 | `experience/` | Visit state, entry threshold, atmosphere, and HTML controls |
 | `flora/` | Flowers, trees, placement data, and flora composition |
