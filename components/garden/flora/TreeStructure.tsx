@@ -10,6 +10,7 @@ import {
   TREE_BRANCH_LOCAL_POSITION,
   TREE_TRUNK_HEIGHT,
   TREE_TRUNK_RADIUS,
+  TREE_TRUNK_TOP_RADIUS,
 } from "./garden-trees";
 
 // A tapered segment joins two local points with one configurable thickness.
@@ -50,6 +51,8 @@ const BRANCH_SEGMENTS: readonly TaperedSegment[] = [
     ],
     thickness: 1,
   },
+  // A tapered continuation avoids a blunt sawn-off trunk inside the canopy.
+  { start: [0, 3.92, 0], end: [0.08, 5.08, 0.1], thickness: 0.46 },
   { start: [0, 2.7, 0], end: [-1.12, 3.62, 0.38], thickness: 0.68 },
   { start: [0, 3.12, 0], end: [0.64, 4.02, -0.92], thickness: 0.56 },
   { start: [0, 3.28, 0], end: [-0.5, 4.16, -0.86], thickness: 0.52 },

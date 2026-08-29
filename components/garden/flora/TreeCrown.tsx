@@ -16,6 +16,13 @@ const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5));
 // Build the immutable leaf outline once for every tree crown.
 const TREE_LEAF_SHAPE = createTreeLeafShape();
 
+// Convert an index and salt into one repeatable irregular value from zero to one.
+function seededUnit(index: number, salt: number): number {
+  // A sine hash gives every transform property an unrelated stable rhythm.
+  const wave = Math.sin(index * 12.9898 + salt * 78.233) * 43758.5453;
+  // Removing the integer part leaves a positive deterministic fraction.
+  return wave - Math.floor(wave);
+}
 // Describe the complete airy leaf distribution once at module load time.
 const CANOPY_LEAVES = Array.from({ length: CANOPY_LEAF_COUNT }, (_, index) => {
   // Spread vertical positions throughout a sphere instead of on flat layers.
