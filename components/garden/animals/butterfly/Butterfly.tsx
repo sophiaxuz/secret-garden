@@ -13,6 +13,11 @@ import {
   createAnimalRoutine,
   type AnimalRoutine,
 } from "../behavior/animal-routine";
+// The shared flight-rest journey prevents unsupported sleep and dawn teleporting.
+import {
+  createFlyingSleepJourney,
+  type FlyingSleepJourney,
+} from "../behavior/animal-sleep";
 // The roaming planner lets a butterfly cross the full garden rather than orbit one flower.
 import {
   createAnimalRoamingRoute,
@@ -37,6 +42,7 @@ const BUTTERFLY_ROUTINE = [
 // Build a lightweight butterfly from a body and four moving wings.
 export function Butterfly({
   animated = true,
+  sleeping = false,
   color,
   origin,
   phase = 0,
@@ -45,6 +51,18 @@ export function Butterfly({
 }: ButterflyProps) {
   // This ref moves the whole butterfly through the garden.
   const butterfly = useRef<THREE.Group>(null);
+  // This journey remembers the paused flight point until dawn returns to it.
+  const sleepJourney = useRef<FlyingSleepJourney | null>(null);
+  if (!sleepJourney.current) {
+    // Create once so rerenders never forget a night transition in progress.
+    sleepJourney.current = createFlyingSleepJourney();
+  }
+  // Lower the authored flight origin into dense vegetation for supported rest.
+  const roost = useRef<HabitatPoint>([
+    origin[0],
+    Math.min(origin[1], 0.62),
+    origin[2],
+  ]).current;
   // These refs animate the left and right wing pairs independently.
   const leftWing = useRef<THREE.Group>(null);
   const rightWing = useRef<THREE.Group>(null);
@@ -69,14 +87,106 @@ export function Butterfly({
   useFrame(({ clock }, delta) => {
     // Stop until React has connected all refs to Three.js objects.
     if (!butterfly.current || !leftWing.current || !rightWing.current) return;
+    // Let the tested lifecycle decide between flight, rest, and waking return.
+    const sleepDecision = sleepJourney.current!.update(
+      sleeping,
+      [
+        butterfly.current.position.x,
+        butterfly.current.position.y,
+        butterfly.current.position.z,
+      ],
+      roost,
+    );
+    // Travel awake to the roost at night and back to the paused route at dawn.
+    if (
+      sleepDecision.phase === "settling" ||
+      sleepDecision.phase === "waking"
+    ) {
+      // Reduced motion completes the positional transition in effectively one frame.
+      const travelDelta = animated ? delta : 10;
+      // Both transition phases always provide the tested destination they require.
+      const target = sleepDecision.target!;
+      // Damp each world axis so the small flyer never teleports between points.
+      butterfly.current.position.x = THREE.MathUtils.damp(
+        butterfly.current.position.x,
+        target[0],
+        1.15,
+        travelDelta,
+      );
+      butterfly.current.position.y = THREE.MathUtils.damp(
+        butterfly.current.position.y,
+        target[1],
+        1.15,
+        travelDelta,
+      );
+      butterfly.current.position.z = THREE.MathUtils.damp(
+        butterfly.current.position.z,
+        target[2],
+        1.15,
+        travelDelta,
+      );
+      // Face the destination while open wings retain an unmistakable flight pose.
+      butterfly.current.rotation.x = THREE.MathUtils.damp(
+        butterfly.current.rotation.x,
+        0,
+        4,
+        travelDelta,
+      );
+      butterfly.current.rotation.y = Math.atan2(
+        target[0] - butterfly.current.position.x,
+        target[2] - butterfly.current.position.z,
+      );
+      // Reduced motion uses open still wings; ordinary mode continues flapping.
+      const flap = animated
+        ? Math.sin(clock.elapsedTime * 10 + phase) * 0.65
+        : 0;
+      leftWing.current.rotation.y = flap;
+      rightWing.current.rotation.y = -flap;
+      return;
+    }
+    // Only a butterfly already supported by its roost may fold into sleep.
+    if (sleepDecision.phase === "sleeping") {
+      // Reduced motion completes this one-time settling pose without a glide.
+      const restDelta = animated ? delta : 10;
+      // Pin the final centimetres to the roost so sleep cannot visibly drift.
+      butterfly.current.position.set(...roost);
+      // Tip the body toward a stem and close both wing pairs nearly together.
+      butterfly.current.rotation.x = THREE.MathUtils.damp(
+        butterfly.current.rotation.x,
+        0.38,
+        3,
+        restDelta,
+      );
+      butterfly.current.rotation.y = phase * 0.37;
+      leftWing.current.rotation.y = THREE.MathUtils.damp(
+        leftWing.current.rotation.y,
+        1.42,
+        4,
+        restDelta,
+      );
+      rightWing.current.rotation.y = THREE.MathUtils.damp(
+        rightWing.current.rotation.y,
+        -1.42,
+        4,
+        restDelta,
+      );
+      return;
+    }
     // Keep each butterfly calmly resting at its own origin for reduced motion.
     if (!animated) {
       butterfly.current.position.set(origin[0], origin[1], origin[2]);
-      butterfly.current.rotation.y = 0;
+      butterfly.current.rotation.set(0, 0, 0);
       leftWing.current.rotation.y = 0;
       rightWing.current.rotation.y = 0;
       return;
     }
+    // Reopen the body angle smoothly when the first dawn flight begins.
+    butterfly.current.rotation.x = THREE.MathUtils.damp(
+      butterfly.current.rotation.x,
+      0,
+      3,
+      delta,
+    );
     // Advance one variable-duration flight toward the next distant destination.
     const behavior = behaviorRoutine.advance(delta);
     // Each completed flight continues from its old endpoint to a fresh route point.

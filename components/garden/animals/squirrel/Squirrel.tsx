@@ -15,6 +15,11 @@ import {
   createAnimalRoutine,
   type AnimalRoutine,
 } from "../behavior/animal-routine";
+// The shared night anchor preserves Hazel's current safe route position until dawn.
+import {
+  getAnimalSleepAnchor,
+  type AnimalSleepAnchor,
+} from "../behavior/animal-sleep";
 // Garden-wide destinations let each tree climb begin and end in different places.
 import {
   createAnimalRoamingRoute,
@@ -32,11 +37,14 @@ const SQUIRREL_ROUTINE = [
 // Build a small squirrel pausing near the edge of the path.
 export function Squirrel({
   animated = true,
+  sleeping = false,
   item,
   highlighted = false,
 }: AnimatedAnimalProps) {
   // This ref moves the whole animal in small alert motions.
   const squirrel = useRef<THREE.Group>(null);
+  // This tuple captures the exact ground, trunk, or branch point at nightfall.
+  const sleepAnchor = useRef<AnimalSleepAnchor>(null);
   // This ref swishes the tail separately from the body.
   const tail = useRef<THREE.Group>(null);
   // Paw refs alternate during a running burst.
@@ -72,6 +80,42 @@ export function Squirrel({
       !rightPaw.current
     )
       return;
+    // Capture or release the stable position before choosing a visible pose.
+    sleepAnchor.current = getAnimalSleepAnchor(sleepAnchor.current, sleeping, [
+      squirrel.current.position.x,
+      squirrel.current.position.y,
+      squirrel.current.position.z,
+    ]);
+    // Night curls Hazel at her current safe point on the tested climb route.
+    if (sleeping) {
+      // Reduced motion reaches the curled pose in one frame without breathing.
+      const restDelta = animated ? delta : 10;
+      // Hold whichever safe route point Hazel occupied instead of floating away.
+      squirrel.current.position.set(...sleepAnchor.current!);
+      // Curl the body slightly inward without changing the established heading.
+      squirrel.current.rotation.x = THREE.MathUtils.damp(
+        squirrel.current.rotation.x,
+        0.18,
+        3,
+        restDelta,
+      );
+      squirrel.current.rotation.z = THREE.MathUtils.damp(
+        squirrel.current.rotation.z,
+        0.28,
+        3,
+        restDelta,
+      );
+      // Fold the large tail over the body and bring both paws together.
+      tail.current.rotation.z = THREE.MathUtils.damp(
+        tail.current.rotation.z,
+        -1.12,
+        4,
+        restDelta,
+      );
+      leftPaw.current.rotation.x = 0.72;
+      rightPaw.current.rotation.x = 0.72;
+      return;
+    }
     // Return to a stable grounded pose if reduced motion is enabled live.
     if (!animated) {
       squirrel.current.position.set(...SQUIRREL_REST_POSE.position);
@@ -87,6 +131,13 @@ export function Squirrel({
     }
     // Stretch or compress the complete safe journey with a newly chosen duration.
     const behavior = behaviorRoutine.advance(delta);
+    // Uncurl smoothly after dawn before ordinary climbing movement resumes.
+    squirrel.current.rotation.z = THREE.MathUtils.damp(
+      squirrel.current.rotation.z,
+      0,
+      3,
+      delta,
+    );
     // End each tree visit at a new patch that becomes the next journey's beginning.
     const startPoint = roamingRoute.point(behavior.cycleIndex);
     const endPoint = roamingRoute.point(behavior.cycleIndex + 1);
@@ -176,20 +227,20 @@ export function Squirrel({
         <meshStandardMaterial color="#c2a17a" roughness={1} />
       </mesh>
       {/* Two dark eyes sit on the forward-facing side of the head. */}
-      <mesh position={[-0.145, 0.64, 0.68]}>
+      <mesh position={[-0.145, 0.64, 0.68]} scale={[1, sleeping ? 0.12 : 1, 1]}>
         <sphereGeometry args={[0.07, 12, 8]} />
         <meshStandardMaterial color="#171714" roughness={0.35} />
       </mesh>
-      <mesh position={[0.145, 0.64, 0.68]}>
+      <mesh position={[0.145, 0.64, 0.68]} scale={[1, sleeping ? 0.12 : 1, 1]}>
         <sphereGeometry args={[0.07, 12, 8]} />
         <meshStandardMaterial color="#171714" roughness={0.35} />
       </mesh>
       {/* Tiny highlights keep the black eyes readable in shadow. */}
-      <mesh position={[-0.167, 0.665, 0.738]}>
+      <mesh position={[-0.167, 0.665, 0.738]} visible={!sleeping}>
         <sphereGeometry args={[0.018, 8, 6]} />
         <meshBasicMaterial color="#fff7df" />
       </mesh>
-      <mesh position={[0.123, 0.665, 0.738]}>
+      <mesh position={[0.123, 0.665, 0.738]} visible={!sleeping}>
         <sphereGeometry args={[0.018, 8, 6]} />
         <meshBasicMaterial color="#fff7df" />
       </mesh>

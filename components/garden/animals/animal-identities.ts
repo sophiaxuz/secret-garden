@@ -5,6 +5,8 @@ import type { AnimalItem } from "../interaction/garden-item";
 export type AnimatedAnimalProps = {
   // Animation can be disabled for visitors who request reduced motion.
   animated?: boolean;
+  // Sleeping lets each species replace daytime roaming with its own rest pose.
+  sleeping?: boolean;
   // Item supplies the name and story exposed through interaction.
   item: AnimalItem;
   // The current reticle target receives a warm local glow.

@@ -7,12 +7,21 @@ import * as THREE from "three";
 // One shared target follows the robin through hopping and flight phases.
 import { GardenInteractionTarget } from "../../interaction/GardenInteractionTarget";
 // Shared habitat data supplies the robin's first ground position.
-import { ANIMAL_HABITATS, createHabitatVector } from "../animal-habitats";
+import {
+  ANIMAL_HABITATS,
+  createHabitatVector,
+  type HabitatPoint,
+} from "../animal-habitats";
 // The shared planner varies hops, perch pauses, and attention across each visit.
 import {
   createAnimalRoutine,
   type AnimalRoutine,
 } from "../behavior/animal-routine";
+// The shared flight-rest journey sends Pip to support and back without teleporting.
+import {
+  createFlyingSleepJourney,
+  type FlyingSleepJourney,
+} from "../behavior/animal-sleep";
 // Garden-wide roaming selects new ground patches between changing tree perches.
 import {
   createAnimalRoamingRoute,
@@ -36,7 +45,12 @@ const ROBIN_HOME = createHabitatVector(ANIMAL_HABITATS.robin.groundStart);
 const ROBIN_PERCHES = ROBIN_TREE_PERCHES.map(
   (position) => new THREE.Vector3(...position),
 );
-
+// The body centre rests just above the permanent nest's woven base at night.
+const ROBIN_SLEEP_HOME: HabitatPoint = [
+  ROBIN_NEST_POSITION[0],
+  ROBIN_NEST_POSITION[1] + 0.18,
+  ROBIN_NEST_POSITION[2],
+];
 // The wide perch range makes each sudden takeoff difficult to anticipate exactly.
 const ROBIN_ROUTINE = [
   { name: "hopping", minDuration: 5, maxDuration: 10 },
@@ -68,16 +82,26 @@ function flyBetween(
 // Build a stylized European robin with a repeating natural behavior cycle.
 export function Robin({
   animated = true,
+  sleeping = false,
   item,
   highlighted = false,
 }: AnimatedAnimalProps) {
   // This group moves the complete bird through the garden.
   const robin = useRef<THREE.Group>(null);
+  // This journey remembers the paused route point until dawn returns to it.
+  const sleepJourney = useRef<FlyingSleepJourney | null>(null);
+  if (!sleepJourney.current) {
+    // Create once so rerenders never forget a night transition in progress.
+    sleepJourney.current = createFlyingSleepJourney();
+  }
   // The head turns independently while the robin watches its surroundings.
   const head = useRef<THREE.Group>(null);
   // Wing groups unfold and flap during the flight phases.
   const leftWing = useRef<THREE.Group>(null);
   const rightWing = useRef<THREE.Group>(null);
+  // Eye refs delay visible closure until Pip is physically inside the nest.
+  const leftEye = useRef<THREE.Mesh>(null);
+  const rightEye = useRef<THREE.Mesh>(null);
   // One seed coordinates the robin's timing, roaming, and changing tree choices.
   const personalitySeed = useRef(Math.random() * 10_000).current;
   // A visit-specific personality prevents the robin replaying one fixed film.
@@ -107,20 +131,154 @@ export function Robin({
       !robin.current ||
       !head.current ||
       !leftWing.current ||
-      !rightWing.current
+      !rightWing.current ||
+      !leftEye.current ||
+      !rightEye.current
     )
       return;
-    // Return to a grounded resting pose if reduced motion is enabled live.
-    if (!animated) {
-      robin.current.position.copy(ROBIN_HOME);
-      robin.current.rotation.set(0, 0.2, 0);
+    // Let the tested lifecycle decide between flight, nest rest, and waking return.
+    const sleepDecision = sleepJourney.current!.update(
+      sleeping,
+      [
+        robin.current.position.x,
+        robin.current.position.y,
+        robin.current.position.z,
+      ],
+      ROBIN_SLEEP_HOME,
+    );
+    // Travel awake to the nest at night and back to the paused route at dawn.
+    if (
+      sleepDecision.phase === "settling" ||
+      sleepDecision.phase === "waking"
+    ) {
+      // Reduced motion completes the positional transition in effectively one frame.
+      const travelDelta = animated ? delta : 10;
+      // Both transition phases always provide the tested destination they require.
+      const target = sleepDecision.target!;
+      // Damp every coordinate to produce a calm, directed flight without teleporting.
+      robin.current.position.x = THREE.MathUtils.damp(
+        robin.current.position.x,
+        target[0],
+        0.85,
+        travelDelta,
+      );
+      robin.current.position.y = THREE.MathUtils.damp(
+        robin.current.position.y,
+        target[1],
+        0.85,
+        travelDelta,
+      );
+      robin.current.position.z = THREE.MathUtils.damp(
+        robin.current.position.z,
+        target[2],
+        0.85,
+        travelDelta,
+      );
+      // Turn toward the destination while the body and open eyes remain alert.
+      const desiredHeading = Math.atan2(
+        target[0] - robin.current.position.x,
+        target[2] - robin.current.position.z,
+      );
+      robin.current.rotation.y = THREE.MathUtils.damp(
+        robin.current.rotation.y,
+        desiredHeading,
+        3,
+        travelDelta,
+      );
+      head.current.rotation.set(0, 0, 0);
+      leftEye.current.scale.y = 1;
+      rightEye.current.scale.y = 1;
+      // Reduced motion uses open still wings; ordinary mode continues flapping.
+      const flap = animated ? Math.sin(clock.elapsedTime * 15) * 0.55 : 0;
+      leftWing.current.rotation.z = 0.43 + flap;
+      rightWing.current.rotation.z = -0.43 - flap;
+      return;
+    }
+    // Only a robin already supported by the permanent nest may fall asleep.
+    if (sleepDecision.phase === "sleeping") {
+      // Reduced motion reaches the still pose in one frame without breathing.
+      const restDelta = animated ? delta : 10;
+      // Pin the final centimetres to the nest so sleep cannot visibly drift.
+      robin.current.position.set(...ROBIN_SLEEP_HOME);
+      // Settle the body without changing the heading reached before night.
+      robin.current.rotation.x = THREE.MathUtils.damp(
+        robin.current.rotation.x,
+        0.05,
+        3,
+        restDelta,
+      );
+      robin.current.rotation.z = 0;
+      // Tuck the head into the shoulder and stop the daytime scanning motion.
+      head.current.rotation.x = THREE.MathUtils.damp(
+        head.current.rotation.x,
+        0.38,
+        4,
+        restDelta,
+      );
       head.current.rotation.y = 0;
+      head.current.rotation.z = 0;
+      // Close both eyes gradually only after the nest supports the body.
+      leftEye.current.scale.y = THREE.MathUtils.damp(
+        leftEye.current.scale.y,
+        0.12,
+        4,
+        restDelta,
+      );
+      rightEye.current.scale.y = THREE.MathUtils.damp(
+        rightEye.current.scale.y,
+        0.12,
+        4,
+        restDelta,
+      );
+      // Both wings fold against the body throughout the sleeping state.
       leftWing.current.rotation.z = 0.43;
       rightWing.current.rotation.z = -0.43;
       return;
     }
+    // Ordinary activity and reduced-motion poses both use fully open eyes.
+    leftEye.current.scale.y = THREE.MathUtils.damp(
+      leftEye.current.scale.y,
+      1,
+      5,
+      animated ? delta : 10,
+    );
+    rightEye.current.scale.y = THREE.MathUtils.damp(
+      rightEye.current.scale.y,
+      1,
+      5,
+      animated ? delta : 10,
+    );
+    // Return to a grounded resting pose if reduced motion is enabled live.
+    if (!animated) {
+      robin.current.position.copy(ROBIN_HOME);
+      robin.current.rotation.set(0, 0.2, 0);
+      head.current.rotation.set(0, 0, 0);
+      leftWing.current.rotation.z = 0.43;
+      rightWing.current.rotation.z = -0.43;
+      return;
+    }
+    // Level the complete bird as the daytime route resumes after nesting.
+    robin.current.rotation.x = THREE.MathUtils.damp(
+      robin.current.rotation.x,
+      0,
+      4,
+      delta,
+    );
+    robin.current.rotation.z = THREE.MathUtils.damp(
+      robin.current.rotation.z,
+      0,
+      4,
+      delta,
+    );
     // Advance the robin's current variable-duration decision.
     const behavior = behaviorRoutine.advance(delta);
+    // Lift the head smoothly when dawn begins after a night in the nest.
+    head.current.rotation.x = THREE.MathUtils.damp(
+      head.current.rotation.x,
+      0,
+      4,
+      delta,
+    );
     const phaseTime = behavior.phaseTime;
     // Two ground points and one real branch define this cycle's connected journey.
     const firstIndex = behavior.cycleIndex * 2;
@@ -255,11 +413,11 @@ export function Robin({
             <sphereGeometry args={[0.38, 18, 12]} />
             <meshStandardMaterial color="#574237" roughness={0.95} />
           </mesh>
-          <mesh position={[-0.2, 0.1, 0.27]}>
+          <mesh ref={leftEye} position={[-0.2, 0.1, 0.27]} scale={[1, 1, 1]}>
             <sphereGeometry args={[0.045, 8, 6]} />
             <meshBasicMaterial color="#0e1110" />
           </mesh>
-          <mesh position={[0.2, 0.1, 0.27]}>
+          <mesh ref={rightEye} position={[0.2, 0.1, 0.27]}>
             <sphereGeometry args={[0.045, 8, 6]} />
             <meshBasicMaterial color="#0e1110" />
           </mesh>

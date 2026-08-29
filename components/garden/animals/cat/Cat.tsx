@@ -13,6 +13,11 @@ import {
   createAnimalRoutine,
   type AnimalRoutine,
 } from "../behavior/animal-routine";
+// The shared night anchor holds Mallow in place and releases her route at dawn.
+import {
+  getAnimalSleepAnchor,
+  type AnimalSleepAnchor,
+} from "../behavior/animal-sleep";
 // Garden-wide roaming lets the cat choose distant places beyond its old patrol.
 import {
   createAnimalRoamingRoute,
@@ -41,11 +46,14 @@ type CatRoutineName = (typeof CAT_ROUTINE)[number]["name"];
 // Build a grey tabby that watches, prowls, pauses, and wanders onward.
 export function Cat({
   animated = true,
+  sleeping = false,
   item,
   highlighted = false,
 }: AnimatedAnimalProps) {
   // The root group controls the complete cat's world transform.
   const cat = useRef<THREE.Group>(null);
+  // This tuple captures the exact daytime position where night begins.
+  const sleepAnchor = useRef<AnimalSleepAnchor>(null);
   // The upper body lifts independently when the cat settles into a sit.
   const body = useRef<THREE.Group>(null);
   // The head turns independently as the cat tracks garden movement.
@@ -105,6 +113,74 @@ export function Cat({
       !rightHindLeg.current
     )
       return;
+    // Capture or release the stable position before choosing a visible pose.
+    sleepAnchor.current = getAnimalSleepAnchor(sleepAnchor.current, sleeping, [
+      cat.current.position.x,
+      cat.current.position.y,
+      cat.current.position.z,
+    ]);
+    // Night folds Mallow into a compact curl wherever she safely stopped.
+    if (sleeping) {
+      // Reduced motion reaches the still curled pose immediately without breathing.
+      const restDelta = animated ? delta : 10;
+      // Hold the exact route position so Mallow curls up without sliding away.
+      cat.current.position.set(...sleepAnchor.current!);
+      // Keep the root grounded while the internal body performs the curl.
+      cat.current.rotation.x = THREE.MathUtils.damp(
+        cat.current.rotation.x,
+        0.04,
+        4,
+        restDelta,
+      );
+      cat.current.rotation.y = THREE.MathUtils.damp(
+        cat.current.rotation.y,
+        0.7,
+        2,
+        restDelta,
+      );
+      cat.current.rotation.z = THREE.MathUtils.damp(
+        cat.current.rotation.z,
+        0.12,
+        4,
+        restDelta,
+      );
+      // Lower and round the torso with a tiny breathing movement.
+      body.current.position.y =
+        -0.08 + (animated ? Math.sin(clock.elapsedTime * 1.05) * 0.012 : 0);
+      body.current.rotation.x = THREE.MathUtils.damp(
+        body.current.rotation.x,
+        -0.58,
+        4,
+        restDelta,
+      );
+      // Tuck the chin toward the chest and stop daytime scanning.
+      head.current.rotation.x = THREE.MathUtils.damp(
+        head.current.rotation.x,
+        0.36,
+        4,
+        restDelta,
+      );
+      head.current.rotation.y = 0;
+      // Wrap both tail sections around the sleeping body.
+      tail.current.rotation.z = THREE.MathUtils.damp(
+        tail.current.rotation.z,
+        1.08,
+        4,
+        restDelta,
+      );
+      tailTip.current.rotation.z = THREE.MathUtils.damp(
+        tailTip.current.rotation.z,
+        1.02,
+        4,
+        restDelta,
+      );
+      // Fold all four paws rather than leaving a standing silhouette.
+      leftPaw.current.rotation.x = 1.08;
+      rightPaw.current.rotation.x = 1.08;
+      leftHindLeg.current.rotation.x = 1.2;
+      rightHindLeg.current.rotation.x = 1.2;
+      return;
+    }
     // Return to a composed standing pose when motion should be reduced.
     if (!animated) {
       cat.current.position.copy(CAT_HOME);
@@ -120,6 +196,20 @@ export function Cat({
       rightHindLeg.current.rotation.x = 0;
       return;
     }
+
+    // Uncurl the root and chin smoothly when Mallow wakes at dawn.
+    cat.current.rotation.z = THREE.MathUtils.damp(
+      cat.current.rotation.z,
+      0,
+      3,
+      delta,
+    );
+    head.current.rotation.x = THREE.MathUtils.damp(
+      head.current.rotation.x,
+      0,
+      4,
+      delta,
+    );
 
     // Advance the current unpredictable decision by this rendered frame.
     const behavior = behaviorRoutine.advance(delta);
@@ -274,7 +364,7 @@ export function Cat({
         size={[3, 3, 4]}
         highlighted={highlighted}
       />
-      <CatModel rig={rig} />
+      <CatModel rig={rig} sleeping={sleeping} />
     </group>
   );
 }

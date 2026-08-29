@@ -38,7 +38,7 @@ export function GardenWorld({
         targetedItemId={targetedItemId}
       />
       {/* Animals add independently animated, inspectable life to the world. */}
-      <GardenAnimals targetedItemId={targetedItemId} />
+      <GardenAnimals targetedItemId={targetedItemId} lightPhase={time.phase} />
     </GardenShadowGroup>
   );
 }

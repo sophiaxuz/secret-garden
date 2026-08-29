@@ -14,7 +14,15 @@ export type DogRig = {
 };
 
 // Render only the golden dog's visible geometry.
-export function DogModel({ rig }: { rig: DogRig }) {
+export function DogModel({
+  rig,
+  sleeping,
+}: {
+  // Rig exposes only the attachment points animated by Dog.
+  rig: DogRig;
+  // Sleeping compresses the existing eyes into closed eyelid shapes.
+  sleeping: boolean;
+}) {
   // A fragment lets Dog's root group position and scale this complete model.
   return (
     <>
@@ -53,19 +61,19 @@ export function DogModel({ rig }: { rig: DogRig }) {
           <meshStandardMaterial color="#895b35" roughness={1} />
         </mesh>
         {/* Dark eyes and tiny highlights make the dog attentive. */}
-        <mesh position={[-0.23, 0.12, 0.4]}>
+        <mesh position={[-0.23, 0.12, 0.4]} scale={[1, sleeping ? 0.12 : 1, 1]}>
           <sphereGeometry args={[0.075, 10, 7]} />
           <meshStandardMaterial color="#211b16" roughness={0.3} />
         </mesh>
-        <mesh position={[0.23, 0.12, 0.4]}>
+        <mesh position={[0.23, 0.12, 0.4]} scale={[1, sleeping ? 0.12 : 1, 1]}>
           <sphereGeometry args={[0.075, 10, 7]} />
           <meshStandardMaterial color="#211b16" roughness={0.3} />
         </mesh>
-        <mesh position={[-0.25, 0.145, 0.46]}>
+        <mesh position={[-0.25, 0.145, 0.46]} visible={!sleeping}>
           <sphereGeometry args={[0.018, 7, 5]} />
           <meshBasicMaterial color="#fff8e9" />
         </mesh>
-        <mesh position={[0.21, 0.145, 0.46]}>
+        <mesh position={[0.21, 0.145, 0.46]} visible={!sleeping}>
           <sphereGeometry args={[0.018, 7, 5]} />
           <meshBasicMaterial color="#fff8e9" />
         </mesh>

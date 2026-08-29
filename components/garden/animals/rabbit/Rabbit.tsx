@@ -13,6 +13,11 @@ import {
   createAnimalRoutine,
   type AnimalRoutine,
 } from "../behavior/animal-routine";
+// The shared night anchor holds Clover in place and releases his route at dawn.
+import {
+  getAnimalSleepAnchor,
+  type AnimalSleepAnchor,
+} from "../behavior/animal-sleep";
 // Garden-wide roaming lets the rabbit choose fresh feeding patches continuously.
 import {
   createAnimalRoamingRoute,
@@ -40,11 +45,14 @@ type RabbitRoutineName = (typeof RABBIT_ROUTINE)[number]["name"];
 // Build a little garden rabbit that nibbles, listens, and bounds through grass.
 export function Rabbit({
   animated = true,
+  sleeping = false,
   item,
   highlighted = false,
 }: AnimatedAnimalProps) {
   // This group moves the complete rabbit along its route.
   const rabbit = useRef<THREE.Group>(null);
+  // This tuple captures the exact daytime position where night begins.
+  const sleepAnchor = useRef<AnimalSleepAnchor>(null);
   // The head dips independently when the rabbit eats.
   const head = useRef<THREE.Group>(null);
   // Ear refs create separate alert twitches.
@@ -82,15 +90,81 @@ export function Rabbit({
       !rightEar.current
     )
       return;
+    // Capture or release the stable position before choosing a visible pose.
+    sleepAnchor.current = getAnimalSleepAnchor(sleepAnchor.current, sleeping, [
+      rabbit.current.position.x,
+      rabbit.current.position.y,
+      rabbit.current.position.z,
+    ]);
+    // Night lowers Clover into a tucked sleeping posture at his current patch.
+    if (sleeping) {
+      // Reduced motion reaches the still crouch immediately and skips breathing.
+      const restDelta = animated ? delta : 10;
+      // Hold the exact route position so Clover crouches without sliding away.
+      rabbit.current.position.set(...sleepAnchor.current!);
+      // Keep the body low and still while the face rests against the forepaws.
+      rabbit.current.rotation.x = THREE.MathUtils.damp(
+        rabbit.current.rotation.x,
+        0.1,
+        4,
+        restDelta,
+      );
+      rabbit.current.rotation.y = THREE.MathUtils.damp(
+        rabbit.current.rotation.y,
+        -0.3,
+        2,
+        restDelta,
+      );
+      rabbit.current.rotation.z = 0;
+      // Slow breathing moves only the tucked head by a few millimetres.
+      head.current.rotation.x =
+        0.48 + (animated ? Math.sin(clock.elapsedTime * 1.08) * 0.018 : 0);
+      // Lay both long ears back so the silhouette no longer reads as alert.
+      leftEar.current.rotation.x = THREE.MathUtils.damp(
+        leftEar.current.rotation.x,
+        1.05,
+        4,
+        restDelta,
+      );
+      rightEar.current.rotation.x = THREE.MathUtils.damp(
+        rightEar.current.rotation.x,
+        1.0,
+        4,
+        restDelta,
+      );
+      leftEar.current.rotation.z = 0.16;
+      rightEar.current.rotation.z = -0.16;
+      return;
+    }
     // Use a calm grounded pose when reduced motion is requested.
     if (!animated) {
       rabbit.current.position.copy(RABBIT_HOME);
       rabbit.current.rotation.set(0, 0, 0);
       head.current.rotation.set(0.12, 0, 0);
-      leftEar.current.rotation.z = 0.08;
-      rightEar.current.rotation.z = -0.08;
+      leftEar.current.rotation.set(0.08, 0, 0.08);
+      rightEar.current.rotation.set(-0.04, 0, -0.08);
       return;
     }
+
+    // Raise both ears and level the body as dawn restarts the foraging routine.
+    rabbit.current.rotation.z = THREE.MathUtils.damp(
+      rabbit.current.rotation.z,
+      0,
+      4,
+      delta,
+    );
+    leftEar.current.rotation.x = THREE.MathUtils.damp(
+      leftEar.current.rotation.x,
+      0.08,
+      4,
+      delta,
+    );
+    rightEar.current.rotation.x = THREE.MathUtils.damp(
+      rightEar.current.rotation.x,
+      -0.04,
+      4,
+      delta,
+    );
 
     // Advance one variable-duration phase while preserving frame-rate independence.
     const behavior = behaviorRoutine.advance(delta);
@@ -205,7 +279,7 @@ export function Rabbit({
         size={[2.5, 2.8, 3]}
         highlighted={highlighted}
       />
-      <RabbitModel rig={rig} />
+      <RabbitModel rig={rig} sleeping={sleeping} />
     </group>
   );
 }
