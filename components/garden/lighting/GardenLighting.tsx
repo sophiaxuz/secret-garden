@@ -87,6 +87,11 @@ export function GardenLighting({ time }: GardenLightingProps) {
         color={time.hemisphereColor}
         groundColor={time.hemisphereGroundColor}
       />
+      {/* Diffuse sky bounce keeps backlit life readable during bright UK mornings. */}
+      <ambientLight
+        intensity={time.ambientIntensity}
+        color={time.hemisphereColor}
+      />
       {/* This directional source produces warm, moving daytime shadows. */}
       <CelestialLight
         position={time.sunPosition}

@@ -33,6 +33,17 @@ test("summer midday gives the garden bright layered daylight", () => {
   expect(midday.environmentIntensity).toBeGreaterThanOrEqual(1);
 });
 
+// A UK summer morning needs diffuse sky bounce before the Sun reaches midday.
+test("summer morning keeps shaded garden life clearly visible", () => {
+  // Eight o'clock British Summer Time represents an ordinary entered-garden hour.
+  const morning = getUkGardenTime(new Date("2026-08-29T07:00:00.000Z"));
+  // The civil and astronomical models must agree that this is daytime morning.
+  expect(morning.phase).toBe("day");
+  expect(morning.periodLabel).toBe("morning");
+  // Broad sky bounce prevents backlit trees and animals becoming black silhouettes.
+  expect(morning.ambientIntensity).toBeGreaterThanOrEqual(0.45);
+});
+
 // A summer midnight checks that the Moon takes over the garden after sunset.
 test("moonlight replaces sunlight during a UK night", () => {
   // At this instant, London observes British Summer Time, one hour ahead of UTC.

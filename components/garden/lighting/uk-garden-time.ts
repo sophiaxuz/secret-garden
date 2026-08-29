@@ -36,6 +36,7 @@ export type UkGardenTime = {
   // Intensities let the scene transition continuously rather than switching abruptly.
   sunIntensity: number;
   moonIntensity: number;
+  ambientIntensity: number;
   hemisphereIntensity: number;
   environmentIntensity: number;
   // Colors coordinate the background, fog, atmosphere, and directional lights.
@@ -291,6 +292,7 @@ export function getUkGardenTime(instant: Date): UkGardenTime {
     moonPosition,
     sunIntensity: 3.4 * daylight,
     moonIntensity: 0.3 * moonlight,
+    ambientIntensity: 0.03 + 0.5 * daylight + 0.02 * moonlight,
     hemisphereIntensity: 0.16 + 1.14 * daylight + 0.08 * moonlight,
     environmentIntensity: 0.08 + 0.94 * daylight + 0.06 * moonlight,
     skyColor,
