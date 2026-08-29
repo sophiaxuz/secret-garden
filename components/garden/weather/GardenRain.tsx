@@ -22,8 +22,8 @@ function seededUnit(index: number, salt: number): number {
   return wave - Math.floor(wave);
 }
 
-// Each mutable drop stores its current local position inside the rain field.
-type RainDrop = { x: number; y: number; z: number };
+// Each mutable drop stores its position and stable individual streak length.
+type RainDrop = { x: number; y: number; z: number; length: number };
 
 // Render camera-local rain as hundreds of fine streaks in one GPU draw call.
 export function GardenRain({ weather }: { weather: GardenWeather }) {
@@ -38,6 +38,7 @@ export function GardenRain({ weather }: { weather: GardenWeather }) {
         x: (seededUnit(index, 1) - 0.5) * RAIN_FIELD_WIDTH,
         y: seededUnit(index, 2) * RAIN_FIELD_HEIGHT,
         z: (seededUnit(index, 3) - 0.5) * RAIN_FIELD_WIDTH,
+        length: 0.7 + seededUnit(index, 4) * 0.9,
       })),
     [],
   );
@@ -86,6 +87,8 @@ export function GardenRain({ weather }: { weather: GardenWeather }) {
         0,
         -Math.sin(windRadians) * windTilt,
       );
+      // Unequal streak lengths break the former uniform synthetic rain pattern.
+      transform.scale.set(1, drop.length, 1);
       transform.updateMatrix();
       rain.setMatrixAt(index, transform.matrix);
     }
@@ -109,14 +112,14 @@ export function GardenRain({ weather }: { weather: GardenWeather }) {
       userData={{ shadowCaster: false }}
     >
       {/* Four radial sides make each distant streak fine and inexpensive. */}
-      <cylinderGeometry args={[0.008, 0.016, 0.58, 4]} />
-      {/* Additive pale blue remains visible against both sky and dark foliage. */}
+      <cylinderGeometry args={[0.005, 0.009, 0.44, 4]} />
+      {/* Normal transparency layers rain-grey water without glowing white overlaps. */}
       <meshBasicMaterial
-        color="#b9d9e8"
+        color="#8299a3"
         transparent
-        opacity={0.5}
+        opacity={0.16 + weather.rainIntensity * 0.12}
         depthWrite={false}
-        blending={THREE.AdditiveBlending}
+        blending={THREE.NormalBlending}
       />
     </instancedMesh>
   );
