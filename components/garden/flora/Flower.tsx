@@ -8,6 +8,11 @@ import { GardenInteractionTarget } from "../interaction/GardenInteractionTarget"
 import type { FlowerMemory } from "./flower-memory";
 // A dedicated component gives each leaf a pointed silhouette and visible vein.
 import { FlowerLeaf } from "./FlowerLeaf";
+// The curved petal outline replaces inflated spheres with a botanical silhouette.
+import { createFlowerPetalShape } from "./flower-petal-shape";
+
+// Create one immutable outline shared by every ordinary flower petal instance.
+const FLOWER_PETAL_SHAPE = createFlowerPetalShape();
 
 // These values describe one procedural flower instance.
 type FlowerProps = {
@@ -23,6 +28,8 @@ type FlowerProps = {
   scale?: number;
   // Petal count creates visual variation between flowers.
   petals?: number;
+  // Layers let fuller blooms add an offset inner ring without a new archetype.
+  layers?: number;
   // Bell flowers use cones and point downward.
   bell?: boolean;
 };
@@ -35,10 +42,13 @@ export function Flower({
   highlighted = false,
   scale = 1,
   petals = 8,
+  layers = 1,
   bell = false,
 }: FlowerProps) {
-  // This ref exposes the one instanced mesh shared by every petal on this flower.
+  // This ref exposes the one instanced mesh shared by every visible petal.
   const petalMesh = useRef<THREE.InstancedMesh>(null);
+  // A layered bloom renders all rings through the same single draw call.
+  const visiblePetalCount = petals * layers;
 
   // Fill the shared petal mesh whenever this flower's petal count changes.
   useLayoutEffect(() => {
@@ -46,16 +56,29 @@ export function Flower({
     if (!petalMesh.current) return;
     // Reuse one temporary object to compose every petal transform.
     const transform = new THREE.Object3D();
-    // Give each petal its own position and rotation around the flower center.
-    for (let index = 0; index < petals; index += 1) {
+    // Give each petal ring its own radius, offset, scale, and gentle depth.
+    for (let index = 0; index < visiblePetalCount; index += 1) {
+      // Integer division identifies which concentric ring owns this petal.
+      const layer = Math.floor(index / petals);
+      // The remainder identifies this petal's place within its ring.
+      const petalIndex = index % petals;
       // Calculate this petal's evenly spaced angle around the complete circle.
-      const angle = (index * Math.PI * 2) / petals;
-      // Sine and cosine place the petal around the flower's center.
-      transform.position.set(Math.cos(angle) * 0.19, Math.sin(angle) * 0.19, 0);
+      const angle =
+        (petalIndex * Math.PI * 2) / petals + (layer * Math.PI) / petals;
+      // Outer petals travel farther while inner petals overlap the flower center.
+      const radius = layer === 0 ? 0.11 : 0.055;
+      // Sine and cosine place each petal around its own concentric ring.
+      transform.position.set(
+        Math.cos(angle) * radius,
+        Math.sin(angle) * radius,
+        layer * 0.018 + Math.sin(angle * 2) * 0.008,
+      );
       // Rotate the petal so its long side points away from the center.
       transform.rotation.set(0, 0, angle - Math.PI / 2);
-      // Keep every petal at the geometry's original scale.
-      transform.scale.set(1, 1, 1);
+      // Inner petals are smaller and alternating petals vary imperceptibly.
+      const variation = 0.94 + (petalIndex % 3) * 0.035;
+      const layerScale = layer === 0 ? 1 : 0.7;
+      transform.scale.set(variation * layerScale, layerScale, 1);
       // Convert this position, rotation, and scale into one instance matrix.
       transform.updateMatrix();
       // Store the completed matrix in the matching GPU instance slot.
@@ -65,7 +88,7 @@ export function Flower({
     petalMesh.current.instanceMatrix.needsUpdate = true;
     // Recalculate the flower head's bounds for correct view-frustum culling.
     petalMesh.current.computeBoundingSphere();
-  }, [petals]);
+  }, [petals, visiblePetalCount]);
 
   // Grouping the pieces lets position and scale affect the entire flower.
   return (
@@ -101,12 +124,15 @@ export function Flower({
         rotation={bell ? [Math.PI, 0, 0] : [0, 0, 0]}
       >
         {/* One instanced mesh renders every petal with one geometry and material. */}
-        <instancedMesh ref={petalMesh} args={[undefined, undefined, petals]}>
-          {/* Bell flowers use cones; ordinary flowers preserve their existing shape. */}
+        <instancedMesh
+          ref={petalMesh}
+          args={[undefined, undefined, visiblePetalCount]}
+        >
+          {/* Bell flowers retain cups; ordinary blooms use refined flat petals. */}
           {bell ? (
             <coneGeometry args={[0.14, 0.36, 12]} />
           ) : (
-            <sphereGeometry args={[0.22, 0.08, 0.08, 16, 8]} />
+            <shapeGeometry args={[FLOWER_PETAL_SHAPE, 12]} />
           )}
           {/* Render both sides and preserve the complete flower-level highlight. */}
           <meshStandardMaterial

@@ -7,6 +7,7 @@ type GardenFlower = {
   color: string;
   scale: number;
   petals: number;
+  layers?: number;
   bell?: boolean;
   memory: FlowerMemory;
 };
@@ -30,6 +31,7 @@ export const INITIAL_FLOWERS = [
     color: "#bf7e88",
     scale: 1.05,
     petals: 12,
+    layers: 2,
     memory: {
       id: "wild-rose",
       name: "Wild rose",

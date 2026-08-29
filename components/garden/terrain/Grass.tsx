@@ -2,6 +2,8 @@
 import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
 // Three supplies the reusable transform and color objects for instancing.
 import * as THREE from "three";
+// One shared deterministic hash keeps procedural placements stable and consistent.
+import { seededUnit } from "../deterministic-random";
 // Shared dimensions keep every tuft inside the habitat and away from the path.
 import { GARDEN_LAYOUT } from "../garden-layout";
 // This factory creates seven fine ribbon blades behind one reusable geometry.
@@ -15,14 +17,6 @@ const GRASS_COLORS = [
   new THREE.Color("#657f54"),
   new THREE.Color("#8a9b68"),
 ] as const;
-
-// Convert an index and salt into a repeatable irregular value between zero and one.
-function seededUnit(index: number, salt: number): number {
-  // Sine breaks the previous diagonal placement pattern while remaining deterministic.
-  const wave = Math.sin(index * 12.9898 + salt * 78.233) * 43758.5453;
-  // Removing the integer portion leaves a stable positive fractional value.
-  return wave - Math.floor(wave);
-}
 
 // Each record contains everything needed to transform and color one shared tuft.
 type GrassTuft = {
