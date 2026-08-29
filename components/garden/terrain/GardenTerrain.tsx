@@ -12,9 +12,21 @@ import { Grass } from "./Grass";
 import { Sea } from "./Sea";
 // One irregular shape keeps meadow and sandy shoreline perfectly aligned.
 import { createGardenIslandShape } from "./garden-coastline";
+// Sea lighting reads only the shared astronomical snapshot supplied by Garden.
+import type { UkGardenTime } from "../lighting/uk-garden-time";
+// Sea motion reads live weather without coupling the rest of terrain to the API.
+import type { GardenWeather } from "../weather/garden-weather";
+
+// Terrain needs atmosphere only to pass it through its narrow Sea boundary.
+type GardenTerrainProps = {
+  // Time controls nocturnal pigment and the painted moon path.
+  time: UkGardenTime;
+  // Weather controls wave direction, energy, speed, and reflection visibility.
+  weather: GardenWeather;
+};
 
 // Render every non-interactive surface that forms the garden terrain.
-export function GardenTerrain() {
+export function GardenTerrain({ time, weather }: GardenTerrainProps) {
   // Load the project-owned meadow material through Drei's texture cache.
   const meadowTexture = useTexture("/material-meadow.webp");
   // Build the authored coastline once rather than reconstructing it on rerenders.
@@ -40,7 +52,7 @@ export function GardenTerrain() {
   return (
     <>
       {/* Water renders first beneath every island surface and disappears into fog. */}
-      <Sea />
+      <Sea time={time} weather={weather} />
       {/* A slightly enlarged lower copy forms a narrow organic sandy shoreline. */}
       <mesh
         position={[0, -0.09, 0]}

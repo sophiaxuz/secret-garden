@@ -87,6 +87,8 @@ export default function Garden({ plantedCount, entered }: GardenProps) {
           <GardenWorld
             plantedCount={plantedCount}
             targetedItemId={targetedItem?.id ?? null}
+            time={gardenTime}
+            weather={gardenWeather}
           />
           {/* Enable targeting while no inspection card is covering the scene. */}
           <GardenInteraction
