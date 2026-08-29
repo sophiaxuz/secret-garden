@@ -8,10 +8,11 @@ Read this diagram from left to right. It shows how browser input becomes page st
 
 ```mermaid
 flowchart LR
-    Visitor["Visitor<br/>keyboard · pointer · photo"] --> Page["app/page.tsx<br/>entry + planting state + HTML controls"]
+    Visitor["Visitor<br/>keyboard · pointer · photo"] --> Page["app/page.tsx<br/>route adapter"]
+    Page --> Experience["GardenExperience<br/>entry + planting state + HTML controls"]
 
-    Page -->|start or stop| Audio["NatureSoundscape<br/>Web Audio"]
-    Page -->|entered + plantedCount| Garden["Garden.tsx<br/>3D boundary + inspection state"]
+    Experience -->|start or stop| Audio["NatureSoundscape<br/>Web Audio"]
+    Experience -->|entered + plantedCount| Garden["Garden.tsx<br/>3D boundary + inspection state"]
 
     Garden --> Clock["GardenClock<br/>HTML overlay"]
     Garden --> Canvas["React Three Fiber Canvas<br/>camera + render loop"]
@@ -37,7 +38,7 @@ flowchart LR
 
 The most important boundaries are:
 
-1. `app/page.tsx` owns the visit-level interface state: entering, sound activation, photo selection, and the number of planted flowers.
+1. `app/page.tsx` is a small route adapter; `experience/GardenExperience.tsx` owns entering, sound activation, photo selection, and the number of planted flowers.
 2. `Garden.tsx` translates that state into a WebGL scene and translates 3D inspection results back into accessible HTML overlays.
 3. `GardenWorld.tsx` only composes physical scene modules; each responsibility folder owns its own implementation.
 4. Flora and animals register small interaction targets, so raycasting never searches the entire scene.
@@ -47,11 +48,12 @@ The most important boundaries are:
 
 | Module | Owns |
 | --- | --- |
-| `Garden.tsx` | The public 3D garden interface used by the page |
+| `Garden.tsx` | The public 3D garden interface used by the experience |
 | `GardenWorld.tsx` | Composition of terrain, flora, and animals |
 | `garden-layout.ts` | Dimensions shared by rendering and movement |
 | `animals/` | Animal models, animation, identities, and habitats |
 | `audio/` | The browser Web Audio soundscape |
+| `experience/` | Visit state, entry threshold, atmosphere, and HTML controls |
 | `flora/` | Flowers, trees, placement data, and flora composition |
 | `interaction/` | Target registration, raycasting, and inspection UI |
 | `lighting/` | UK time, Sun, Moon, drifting clouds, and world shadow policy |
@@ -60,4 +62,4 @@ The most important boundaries are:
 
 `Garden.tsx` and `GardenWorld.tsx` are composition modules. Feature implementation should remain in the responsibility folder that owns it.
 
-The page mounts `audio/NatureSoundscape.tsx` directly because browser autoplay rules require its `start()` interface to run inside the threshold click gesture. It remains part of the garden module even though it sits beside, rather than inside, the WebGL canvas.
+`experience/GardenExperience.tsx` mounts `audio/NatureSoundscape.tsx` directly because browser autoplay rules require its `start()` interface to run inside the threshold click gesture. It remains part of the garden module even though it sits beside, rather than inside, the WebGL canvas.
