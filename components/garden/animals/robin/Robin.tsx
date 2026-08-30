@@ -215,6 +215,9 @@ export function Robin({
         4,
         restDelta,
       );
+        4,
+        restDelta,
+      );
       head.current.rotation.y = 0;
       head.current.rotation.z = 0;
       // Close both eyes gradually only after the nest supports the body.

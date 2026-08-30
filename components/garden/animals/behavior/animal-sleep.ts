@@ -32,6 +32,7 @@ export function getAnimalActivity(phase: GardenLightPhase): AnimalActivity {
   return phase === "night" ? "sleeping" : "awake";
 }
 
+
 // Hold the first position reached at night, then release it when daylight returns.
 export function getAnimalSleepAnchor(
   existingAnchor: AnimalSleepAnchor,

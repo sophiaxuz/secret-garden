@@ -30,6 +30,8 @@ import { getSquirrelMotion, SQUIRREL_CYCLE_SECONDS } from "./squirrel-motion";
 
 // This stable pose supplies both the initial render and reduced-motion fallback.
 const SQUIRREL_REST_POSE = getSquirrelMotion(0);
+// The middle of the tested perch phase gives Hazel a safe branch-top night home.
+const SQUIRREL_NIGHT_POSE = getSquirrelMotion(12);
 // Preserve the safe climb sequence while varying its complete pace each cycle.
 const SQUIRREL_ROUTINE = [
   { name: "journey", minDuration: 44, maxDuration: 68 },
@@ -97,6 +99,12 @@ export function Squirrel({
         squirrel.current.rotation.x,
         0.18,
         3,
+        restDelta,
+      );
+      squirrel.current.rotation.y = THREE.MathUtils.damp(
+        squirrel.current.rotation.y,
+        SQUIRREL_NIGHT_POSE.heading,
+        2,
         restDelta,
       );
       squirrel.current.rotation.z = THREE.MathUtils.damp(

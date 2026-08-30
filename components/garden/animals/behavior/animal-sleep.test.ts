@@ -19,6 +19,7 @@ test("animals sleep at night and wake for every lighter phase", () => {
   expect(getAnimalActivity("dusk")).toBe("awake");
 });
 
+
 // A stable anchor prevents sleeping bodies sliding home or teleporting at dawn.
 test("sleep holds the current position and releases it on waking", () => {
   // The first sleeping frame captures the exact place reached by daytime movement.
