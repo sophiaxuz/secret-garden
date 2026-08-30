@@ -5,7 +5,10 @@ import { GARDEN_LAYOUT } from "../garden-layout";
 // Rendered tree data keeps collision tests synchronized with moved landmarks.
 import { GARDEN_TREES, TREE_TRUNK_RADIUS } from "../flora/garden-trees";
 // This public navigation rule keeps movement within the explorable habitat.
-import { keepVisitorInsideGarden } from "./garden-navigation";
+import {
+  keepVisitorInsideGarden,
+  shouldRegressGardenQuality,
+} from "./garden-navigation";
 
 // Test the first named tree without copying its mutable world coordinates.
 const THRESHOLD_OAK = GARDEN_TREES[0];
@@ -88,4 +91,24 @@ test("an exact tree-centre position recovers in a stable direction", () => {
   );
   // Recovery should not introduce an arbitrary north-south jump.
   expect(attemptedPosition.z).toBeCloseTo(THRESHOLD_OAK.position[2]);
+});
+
+// Camera motion should request temporary resolution relief from the renderer.
+test("walking or looking triggers adaptive garden quality", () => {
+  // A still camera should retain full resting detail without needless regression calls.
+  expect(shouldRegressGardenQuality(0, 0, 0)).toBe(false);
+  // Keyboard motion and pointer rotation each exercise the exact live decision seam.
+  expect(shouldRegressGardenQuality(1, 0, 0)).toBe(true);
+  expect(shouldRegressGardenQuality(0, -1, 0)).toBe(true);
+  expect(shouldRegressGardenQuality(0, 0, 0.002)).toBe(true);
+});
+
+// Continuous movement should extend reduced quality without per-frame timer churn.
+test("adaptive quality receives a steady heartbeat throughout movement", () => {
+  // A request made too soon is skipped because the existing debounce remains alive.
+  expect(shouldRegressGardenQuality(1, 0, 0, 0.1)).toBe(false);
+  // A later request refreshes the debounce before full resolution can return.
+  expect(shouldRegressGardenQuality(1, 0, 0, 0.15)).toBe(true);
+  // Stillness never extends reduced quality, however much time has passed.
+  expect(shouldRegressGardenQuality(0, 0, 0, 10)).toBe(false);
 });

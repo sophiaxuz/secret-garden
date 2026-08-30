@@ -9,7 +9,10 @@ import * as THREE from "three";
 // Shared dimensions keep camera movement inside the rendered garden.
 import { GARDEN_LAYOUT } from "../garden-layout";
 // This navigation rule owns the promise that visitors cannot leave the habitat.
-import { keepVisitorInsideGarden } from "./garden-navigation";
+import {
+  keepVisitorInsideGarden,
+  shouldRegressGardenQuality,
+} from "./garden-navigation";
 
 // This module translates desktop and touch input into camera movement.
 export function FirstPersonControls({ active }: { active: boolean }) {
@@ -20,12 +23,16 @@ export function FirstPersonControls({ active }: { active: boolean }) {
   const rightDirection = useRef(new THREE.Vector3());
   // This vector preserves the camera's safe position before each attempted move.
   const previousPosition = useRef(new THREE.Vector3());
+  // The previous orientation reveals pointer-lock camera motion between frames.
+  const previousRotation = useRef(new THREE.Quaternion());
+  // A throttled heartbeat holds adaptive quality steady throughout long movement.
+  const lastQualityRequestAt = useRef(Number.NEGATIVE_INFINITY);
   // This stores the previous finger position while a touch drag is active.
   const touchStart = useRef<[number, number] | null>(null);
   // Touch devices need drag controls instead of browser pointer lock.
   const [touchDevice, setTouchDevice] = useState(false);
   // `camera` is the visitor's view and `gl` owns the underlying canvas element.
-  const { camera, gl } = useThree();
+  const { camera, gl, performance: renderPerformance } = useThree();
 
   // Install the global keyboard listeners once when this module mounts.
   useEffect(() => {
@@ -108,7 +115,7 @@ export function FirstPersonControls({ active }: { active: boolean }) {
   }, [active, camera, gl, touchDevice]);
 
   // Run this movement calculation before every rendered animation frame.
-  useFrame((_, delta) => {
+  useFrame(({ clock }, delta) => {
     // Keep the camera still until the visitor crosses the threshold.
     if (!active) return;
     // Opposing forward/back inputs cancel each other to produce -1, 0, or 1.
@@ -119,6 +126,21 @@ export function FirstPersonControls({ active }: { active: boolean }) {
     const sideways =
       Number(keys.current.has("KeyD") || keys.current.has("ArrowRight")) -
       Number(keys.current.has("KeyA") || keys.current.has("ArrowLeft"));
+    // PointerLockControls updates the camera outside this component's key state.
+    const rotationDelta = previousRotation.current.angleTo(camera.quaternion);
+    previousRotation.current.copy(camera.quaternion);
+    // Lower device resolution temporarily whenever travel or looking needs headroom.
+    if (
+      shouldRegressGardenQuality(
+        forward,
+        sideways,
+        rotationDelta,
+        clock.elapsedTime - lastQualityRequestAt.current,
+      )
+    ) {
+      renderPerformance.regress();
+      lastQualityRequestAt.current = clock.elapsedTime;
+    }
     // Ask the camera for the direction it currently faces.
     const direction = forwardDirection.current;
     camera.getWorldDirection(direction);
@@ -147,7 +169,7 @@ export function FirstPersonControls({ active }: { active: boolean }) {
     // Add a tiny vertical bob so walking feels less like a floating camera.
     camera.position.y =
       GARDEN_LAYOUT.entrance.y +
-      Math.sin(performance.now() * 0.004) *
+      Math.sin(globalThis.performance.now() * 0.004) *
         (forward || sideways ? 0.018 : 0.006);
   });
 

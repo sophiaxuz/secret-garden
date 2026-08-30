@@ -376,7 +376,7 @@ export function Robin({
           highlighted={highlighted}
         />
         {/* A rounded brown shape forms the robin's body. */}
-        <mesh scale={[0.75, 1, 0.72]}>
+        <mesh scale={[0.75, 1, 0.72]} castShadow>
           <sphereGeometry args={[0.55, 18, 12]} />
           <meshStandardMaterial color="#6a4937" roughness={0.95} />
         </mesh>
@@ -391,7 +391,7 @@ export function Robin({
           position={[-0.38, 0.02, -0.02]}
           rotation={[0, 0, 0.43]}
         >
-          <mesh scale={[0.18, 0.65, 0.42]}>
+          <mesh scale={[0.18, 0.65, 0.42]} castShadow>
             <sphereGeometry args={[0.7, 12, 8]} />
             <meshStandardMaterial color="#594033" roughness={1} />
           </mesh>
@@ -402,14 +402,14 @@ export function Robin({
           position={[0.38, 0.02, -0.02]}
           rotation={[0, 0, -0.43]}
         >
-          <mesh scale={[0.18, 0.65, 0.42]}>
+          <mesh scale={[0.18, 0.65, 0.42]} castShadow>
             <sphereGeometry args={[0.7, 12, 8]} />
             <meshStandardMaterial color="#594033" roughness={1} />
           </mesh>
         </group>
         {/* Group the head, eyes, and beak so they turn together. */}
         <group ref={head} position={[0, 0.58, 0.08]}>
-          <mesh>
+          <mesh castShadow>
             <sphereGeometry args={[0.38, 18, 12]} />
             <meshStandardMaterial color="#574237" roughness={0.95} />
           </mesh>

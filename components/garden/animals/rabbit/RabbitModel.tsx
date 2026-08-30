@@ -24,7 +24,7 @@ export function RabbitModel({
   return (
     <>
       {/* A long rounded body creates the rabbit's crouched silhouette. */}
-      <mesh scale={[0.66, 0.58, 0.95]}>
+      <mesh scale={[0.66, 0.58, 0.95]} castShadow>
         <sphereGeometry args={[0.62, 16, 11]} />
         <meshStandardMaterial color="#a88f75" roughness={1} />
       </mesh>
@@ -45,7 +45,7 @@ export function RabbitModel({
       {/* Group the face and ears so the whole head can dip to nibble. */}
       <group ref={rig.head} position={[0, 0.28, 0.58]} rotation={[0.12, 0, 0]}>
         {/* A small rounded head sits above the shoulders. */}
-        <mesh scale={[0.82, 0.82, 0.92]}>
+        <mesh scale={[0.82, 0.82, 0.92]} castShadow>
           <sphereGeometry args={[0.43, 16, 10]} />
           <meshStandardMaterial color="#ad947b" roughness={1} />
         </mesh>
@@ -55,6 +55,7 @@ export function RabbitModel({
           position={[-0.18, 0.57, -0.02]}
           rotation={[0.08, 0, 0.08]}
           scale={[0.19, 0.62, 0.13]}
+          castShadow
         >
           <sphereGeometry args={[0.7, 12, 8]} />
           <meshStandardMaterial color="#9d846e" roughness={1} />
@@ -64,6 +65,7 @@ export function RabbitModel({
           position={[0.18, 0.57, -0.02]}
           rotation={[-0.04, 0, -0.08]}
           scale={[0.19, 0.62, 0.13]}
+          castShadow
         >
           <sphereGeometry args={[0.7, 12, 8]} />
           <meshStandardMaterial color="#9d846e" roughness={1} />

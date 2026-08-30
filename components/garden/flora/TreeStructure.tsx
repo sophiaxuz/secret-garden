@@ -129,7 +129,7 @@ export function TreeStructure({ highlighted }: { highlighted: boolean }) {
   return (
     <group>
       {/* Sixteen radial faces soften the former visibly polygonal trunk. */}
-      <mesh position={[0, VISIBLE_TRUNK_HEIGHT / 2, 0]}>
+      <mesh position={[0, VISIBLE_TRUNK_HEIGHT / 2, 0]} castShadow>
         <cylinderGeometry
           args={[
             VISIBLE_TRUNK_TIP_RADIUS,
@@ -150,6 +150,7 @@ export function TreeStructure({ highlighted }: { highlighted: boolean }) {
       <instancedMesh
         ref={roots}
         args={[undefined, undefined, ROOT_SEGMENTS.length]}
+        castShadow
       >
         <cylinderGeometry args={[0.08, 0.26, 1, 10]} />
         <meshStandardMaterial map={barkTexture} color="#b8aa92" roughness={1} />
@@ -158,6 +159,7 @@ export function TreeStructure({ highlighted }: { highlighted: boolean }) {
       <instancedMesh
         ref={branches}
         args={[undefined, undefined, BRANCH_SEGMENTS.length]}
+        castShadow
       >
         <cylinderGeometry args={[0.1, 0.17, 1, 12]} />
         <meshStandardMaterial

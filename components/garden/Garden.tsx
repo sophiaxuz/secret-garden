@@ -2,7 +2,7 @@
 "use client";
 
 // `Environment` supplies reflections that adapt to the garden's current light.
-import { Environment } from "@react-three/drei";
+import { AdaptiveDpr, Environment } from "@react-three/drei";
 // `Canvas` creates the Three.js renderer, scene, and camera for React.
 import { Canvas } from "@react-three/fiber";
 // React state connects fast 3D targeting to the slower HTML information interface.
@@ -76,7 +76,8 @@ export default function Garden({ plantedCount, entered }: GardenProps) {
           ],
           fov: 62,
         }}
-        dpr={[1, 1.6]}
+        dpr={[0.75, 1.25]}
+        performance={{ min: 0.65, max: 1, debounce: 350 }}
         shadows="soft"
       >
         {/* Make atmosphere and shadow direction follow the live UK sky. */}
@@ -104,6 +105,8 @@ export default function Garden({ plantedCount, entered }: GardenProps) {
         />
         {/* Enable navigation only after the threshold has been crossed. */}
         <FirstPersonControls active={entered && !selectedItem} />
+        {/* Reduce pixel density only during movement, then restore resting detail. */}
+        <AdaptiveDpr />
       </Canvas>
 
       {/* Keep civil time visible without placing HTML inside the WebGL canvas. */}

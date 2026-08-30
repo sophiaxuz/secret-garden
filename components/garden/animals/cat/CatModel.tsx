@@ -31,7 +31,7 @@ export function CatModel({
       {/* The torso and head share a group that rises into the sitting pose. */}
       <group ref={rig.body}>
         {/* A slim oval forms the cat's flexible torso. */}
-        <mesh scale={[0.58, 0.54, 1.05]}>
+        <mesh scale={[0.58, 0.54, 1.05]} castShadow>
           <sphereGeometry args={[0.68, 17, 11]} />
           <meshStandardMaterial color="#777873" roughness={1} />
         </mesh>
@@ -43,16 +43,24 @@ export function CatModel({
         {/* Group every facial feature so the cat can look around. */}
         <group ref={rig.head} position={[0, 0.3, 0.82]}>
           {/* A rounded head keeps the stylized cat soft and approachable. */}
-          <mesh scale={[0.84, 0.78, 0.76]}>
+          <mesh scale={[0.84, 0.78, 0.76]} castShadow>
             <sphereGeometry args={[0.5, 16, 10]} />
             <meshStandardMaterial color="#7f807b" roughness={1} />
           </mesh>
           {/* Two triangular ears create the cat's unmistakable silhouette. */}
-          <mesh position={[-0.28, 0.43, -0.02]} rotation={[0, 0, -0.08]}>
+          <mesh
+            position={[-0.28, 0.43, -0.02]}
+            rotation={[0, 0, -0.08]}
+            castShadow
+          >
             <coneGeometry args={[0.18, 0.48, 7]} />
             <meshStandardMaterial color="#686a66" roughness={1} />
           </mesh>
-          <mesh position={[0.28, 0.43, -0.02]} rotation={[0, 0, 0.08]}>
+          <mesh
+            position={[0.28, 0.43, -0.02]}
+            rotation={[0, 0, 0.08]}
+            castShadow
+          >
             <coneGeometry args={[0.18, 0.48, 7]} />
             <meshStandardMaterial color="#686a66" roughness={1} />
           </mesh>
@@ -136,7 +144,7 @@ export function CatModel({
         position={[0, 0.08, -0.88]}
         rotation={[-0.7, 0, -0.38]}
       >
-        <mesh position={[0, 0.45, 0]}>
+        <mesh position={[0, 0.45, 0]} castShadow>
           <cylinderGeometry args={[0.09, 0.13, 0.9, 9]} />
           <meshStandardMaterial color="#676965" roughness={1} />
         </mesh>
@@ -145,7 +153,7 @@ export function CatModel({
           position={[0, 0.86, 0]}
           rotation={[0, 0, 0.35]}
         >
-          <mesh position={[0, 0.33, 0]}>
+          <mesh position={[0, 0.33, 0]} castShadow>
             <cylinderGeometry args={[0.065, 0.095, 0.66, 9]} />
             <meshStandardMaterial color="#676965" roughness={1} />
           </mesh>

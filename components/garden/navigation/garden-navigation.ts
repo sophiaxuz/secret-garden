@@ -7,6 +7,22 @@ import { GARDEN_TREES, TREE_TRUNK_RADIUS } from "../flora/garden-trees";
 const VISITOR_RADIUS = 0.34;
 // A tiny gap prevents floating-point rounding from leaving the visitor inside bark.
 const COLLISION_GAP = 0.002;
+// Refreshing below the Canvas debounce avoids resolution pulses during long walks.
+export const GARDEN_QUALITY_HEARTBEAT_SECONDS = 0.15;
+
+// Decide when motion should trade a little pixel density for immediate response.
+export function shouldRegressGardenQuality(
+  forward: number,
+  sideways: number,
+  cameraRotationRadians: number,
+  secondsSinceLastRequest = Number.POSITIVE_INFINITY,
+): boolean {
+  // Keyboard travel or a perceptible look gesture means the camera is moving.
+  const moving =
+    forward !== 0 || sideways !== 0 || cameraRotationRadians > 0.0001;
+  // A periodic heartbeat keeps the recovery timer postponed without frame-by-frame churn.
+  return moving && secondsSinceLastRequest >= GARDEN_QUALITY_HEARTBEAT_SECONDS;
+}
 
 // Navigation needs only horizontal coordinates, not a complete Three.js vector.
 type GardenPosition = {

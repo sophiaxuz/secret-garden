@@ -207,21 +207,21 @@ export function Squirrel({
         highlighted={highlighted}
       />
       {/* A stretched sphere forms the body. */}
-      <mesh scale={[0.72, 0.85, 1]}>
+      <mesh scale={[0.72, 0.85, 1]} castShadow>
         <sphereGeometry args={[0.55, 16, 10]} />
         <meshStandardMaterial color="#8a6749" roughness={1} />
       </mesh>
       {/* A smaller sphere creates the head. */}
-      <mesh position={[0, 0.55, 0.38]}>
+      <mesh position={[0, 0.55, 0.38]} castShadow>
         <sphereGeometry args={[0.34, 14, 10]} />
         <meshStandardMaterial color="#916f50" roughness={1} />
       </mesh>
       {/* Two cones create the squirrel's pointed ears. */}
-      <mesh position={[-0.19, 0.88, 0.35]}>
+      <mesh position={[-0.19, 0.88, 0.35]} castShadow>
         <coneGeometry args={[0.1, 0.28, 8]} />
         <meshStandardMaterial color="#76543c" roughness={1} />
       </mesh>
-      <mesh position={[0.19, 0.88, 0.35]}>
+      <mesh position={[0.19, 0.88, 0.35]} castShadow>
         <coneGeometry args={[0.1, 0.28, 8]} />
         <meshStandardMaterial color="#76543c" roughness={1} />
       </mesh>
@@ -297,11 +297,11 @@ export function Squirrel({
       </mesh>
       {/* The tail is a chain of overlapping ellipsoids in its own moving group. */}
       <group ref={tail} position={[0, 0.3, -0.55]} rotation={[0.2, 0, -0.35]}>
-        <mesh position={[0, 0.45, -0.12]} scale={[0.48, 0.9, 0.42]}>
+        <mesh position={[0, 0.45, -0.12]} scale={[0.48, 0.9, 0.42]} castShadow>
           <sphereGeometry args={[0.62, 16, 10]} />
           <meshStandardMaterial color="#9b7653" roughness={1} />
         </mesh>
-        <mesh position={[0, 1.05, 0.02]} scale={[0.38, 0.72, 0.34]}>
+        <mesh position={[0, 1.05, 0.02]} scale={[0.38, 0.72, 0.34]} castShadow>
           <sphereGeometry args={[0.58, 16, 10]} />
           <meshStandardMaterial color="#a27b57" roughness={1} />
         </mesh>

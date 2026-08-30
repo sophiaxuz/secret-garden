@@ -18,9 +18,9 @@ import type { GardenLightPhase } from "./uk-garden-time";
 import type { GardenWeatherCondition } from "../weather/garden-weather";
 
 // The towering sprite provides fuller cumulus silhouettes.
-const CUMULUS_TEXTURE_PATH = "/cloud-cumulus.png";
+const CUMULUS_TEXTURE_PATH = "/cloud-cumulus.webp";
 // The wider sprite provides lighter fair-weather variation.
-const WISPY_TEXTURE_PATH = "/cloud-wispy.png";
+const WISPY_TEXTURE_PATH = "/cloud-wispy.webp";
 // The first generated image is three units wide for every two units of height.
 const CUMULUS_ASPECT_RATIO = 1.5;
 // The second generated image uses a sixteen-by-nine transparent canvas.

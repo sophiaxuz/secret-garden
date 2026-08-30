@@ -27,7 +27,7 @@ export function DogModel({
   return (
     <>
       {/* A long oval forms the dog's torso. */}
-      <mesh scale={[0.68, 0.56, 1.08]}>
+      <mesh scale={[0.68, 0.56, 1.08]} castShadow>
         <sphereGeometry args={[0.72, 17, 11]} />
         <meshStandardMaterial color="#b77d43" roughness={1} />
       </mesh>
@@ -39,7 +39,7 @@ export function DogModel({
       {/* Group the head and face so they can sniff and look around together. */}
       <group ref={rig.head} position={[0, 0.34, 0.88]}>
         {/* A broad head creates a gentle, friendly expression. */}
-        <mesh scale={[0.82, 0.76, 0.78]}>
+        <mesh scale={[0.82, 0.76, 0.78]} castShadow>
           <sphereGeometry args={[0.55, 16, 11]} />
           <meshStandardMaterial color="#bd8248" roughness={1} />
         </mesh>
@@ -48,6 +48,7 @@ export function DogModel({
           position={[-0.48, 0.04, -0.03]}
           rotation={[0.1, 0, 0.24]}
           scale={[0.28, 0.55, 0.2]}
+          castShadow
         >
           <sphereGeometry args={[0.65, 12, 8]} />
           <meshStandardMaterial color="#895b35" roughness={1} />
@@ -56,6 +57,7 @@ export function DogModel({
           position={[0.48, 0.04, -0.03]}
           rotation={[0.1, 0, -0.24]}
           scale={[0.28, 0.55, 0.2]}
+          castShadow
         >
           <sphereGeometry args={[0.65, 12, 8]} />
           <meshStandardMaterial color="#895b35" roughness={1} />
@@ -116,7 +118,7 @@ export function DogModel({
         position={[0, 0.16, -0.9]}
         rotation={[-0.65, 0, 0.22]}
       >
-        <mesh position={[0, 0.43, 0]}>
+        <mesh position={[0, 0.43, 0]} castShadow>
           <cylinderGeometry args={[0.1, 0.16, 0.86, 9]} />
           <meshStandardMaterial color="#a96f3d" roughness={1} />
         </mesh>
