@@ -12,7 +12,7 @@ const BLADE_LEVELS = [
   { height: 1, widthScale: 0.06, bendProgress: 1, shade: 0.96 },
 ] as const;
 
-// Seven fine blades overlap into a loose tuft without forming a rigid star shape.
+// Twelve fine blades overlap in uneven layers without forming a rigid star shape.
 const TUFT_BLADES = [
   {
     offsetX: -0.045,
@@ -84,6 +84,56 @@ const TUFT_BLADES = [
     sideCurve: 0.007,
     tone: 0.92,
   },
+  {
+    offsetX: -0.018,
+    offsetZ: -0.075,
+    rotation: 0.67,
+    heightScale: 0.48,
+    halfWidth: 0.011,
+    bend: 0.055,
+    sideCurve: 0.004,
+    tone: 0.86,
+  },
+  {
+    offsetX: 0.078,
+    offsetZ: 0.038,
+    rotation: 1.61,
+    heightScale: 0.69,
+    halfWidth: 0.0125,
+    bend: 0.092,
+    sideCurve: -0.008,
+    tone: 0.91,
+  },
+  {
+    offsetX: -0.082,
+    offsetZ: -0.014,
+    rotation: 2.53,
+    heightScale: 0.76,
+    halfWidth: 0.013,
+    bend: 0.11,
+    sideCurve: 0.009,
+    tone: 0.95,
+  },
+  {
+    offsetX: 0.048,
+    offsetZ: 0.078,
+    rotation: 3.47,
+    heightScale: 0.53,
+    halfWidth: 0.01,
+    bend: 0.06,
+    sideCurve: -0.004,
+    tone: 0.87,
+  },
+  {
+    offsetX: -0.052,
+    offsetZ: 0.084,
+    rotation: 5.24,
+    heightScale: 0.88,
+    halfWidth: 0.014,
+    bend: 0.125,
+    sideCurve: -0.009,
+    tone: 0.97,
+  },
 ] as const;
 
 // Create one reusable tuft from curved ribbon surfaces instead of a rigid cone.
@@ -93,9 +143,11 @@ export function createGrassTuftGeometry(): THREE.BufferGeometry {
   const indices: number[] = [];
   // Neutral vertex shades multiply with each tuft's natural green instance color.
   const colors: number[] = [];
+  // One phase per vertex lets the shader move neighboring blades independently.
+  const windPhases: number[] = [];
 
-  // Give each tuft seven differently oriented and proportioned blades.
-  TUFT_BLADES.forEach((blade) => {
+  // Give each tuft twelve differently oriented and proportioned blades.
+  TUFT_BLADES.forEach((blade, bladeIndex) => {
     // Record where this blade's vertices begin inside the combined geometry.
     const bladeVertexStart = positions.length / 3;
     // Precalculate its horizontal direction vectors once for every level.
@@ -139,6 +191,10 @@ export function createGrassTuftGeometry(): THREE.BufferGeometry {
       colors.push(shade * 0.93, shade, shade * 0.88);
       // Both edge vertices share the same gradient colour across the ribbon width.
       colors.push(shade * 0.93, shade, shade * 0.88);
+      // An irrational-looking interval prevents neighboring wind rhythms repeating.
+      const windPhase = bladeIndex * 0.731 + blade.rotation * 0.37;
+      // Both sides of one ribbon must bend together rather than shearing apart.
+      windPhases.push(windPhase, windPhase);
     });
 
     // Join each neighboring pair of levels with two surface triangles.
@@ -173,6 +229,11 @@ export function createGrassTuftGeometry(): THREE.BufferGeometry {
   );
   // Per-vertex shades produce soft depth while retaining per-instance greens.
   geometry.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
+  // Wind phases give the live material one stable individuality value per vertex.
+  geometry.setAttribute(
+    "windPhase",
+    new THREE.Float32BufferAttribute(windPhases, 1),
+  );
   // The shared index avoids duplicating vertices between neighboring segments.
   geometry.setIndex(indices);
   // Smooth normals let daylight roll gently across the curved blade profiles.

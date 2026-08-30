@@ -26,8 +26,20 @@ test("grass geometry forms a slender layered meadow tuft", () => {
   expect(bounds.max.x - bounds.min.x).toBeGreaterThan(0.15);
   // Differently oriented blades keep the tuft visible from the side as well.
   expect(bounds.max.z - bounds.min.z).toBeGreaterThan(0.15);
-  // Many slim segmented ribbons overlap into a soft tuft instead of three broad fins.
-  expect(geometry.getAttribute("position").count).toBeGreaterThanOrEqual(70);
+  // A lush tuft needs enough independently curved blades to avoid sparse spikes.
+  expect(geometry.getAttribute("position").count).toBeGreaterThanOrEqual(120);
+  // Every blade carries a stable phase so wind never moves the tuft as one rigid fan.
+  const windPhases = geometry.getAttribute("windPhase");
+  // The custom animation attribute must cover every rendered vertex exactly once.
+  expect(windPhases.count).toBe(geometry.getAttribute("position").count);
+  // Collect rounded values so repeated vertices within one blade count as one rhythm.
+  const uniqueWindPhases = new Set(
+    Array.from({ length: windPhases.count }, (_, vertex) =>
+      windPhases.getX(vertex).toFixed(3),
+    ),
+  );
+  // At least ten rhythms create the layered movement expected from a meadow tuft.
+  expect(uniqueWindPhases.size).toBeGreaterThanOrEqual(10);
   // A subtle per-vertex gradient gives the base and tips natural tonal variation.
   const colors = geometry.getAttribute("color");
   // Every rendered vertex needs a matching colour so the gradient stays continuous.

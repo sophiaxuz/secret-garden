@@ -17,7 +17,7 @@ import type { UkGardenTime } from "../lighting/uk-garden-time";
 // Sea motion reads live weather without coupling the rest of terrain to the API.
 import type { GardenWeather } from "../weather/garden-weather";
 
-// Terrain needs atmosphere only to pass it through its narrow Sea boundary.
+// Terrain passes the shared atmosphere into surfaces that visibly respond to it.
 type GardenTerrainProps = {
   // Time controls nocturnal pigment and the painted moon path.
   time: UkGardenTime;
@@ -77,8 +77,8 @@ export function GardenTerrain({ time, weather }: GardenTerrainProps) {
         {/* High roughness makes the ground diffuse rather than reflective. */}
         <meshStandardMaterial map={meadowTexture} roughness={1} />
       </mesh>
-      {/* Render deterministic meadow tufts through one GPU-instanced mesh. */}
-      <Grass />
+      {/* Render deterministic meadow tufts animated by the same live weather. */}
+      <Grass weather={weather} />
     </>
   );
 }
