@@ -36,6 +36,7 @@ export function GardenWorld({
       <GardenFlora
         plantedCount={plantedCount}
         targetedItemId={targetedItemId}
+        weather={weather}
       />
       {/* Animals add independently animated, inspectable life to the world. */}
       <GardenAnimals targetedItemId={targetedItemId} lightPhase={time.phase} />

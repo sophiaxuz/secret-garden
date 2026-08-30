@@ -14,3 +14,33 @@ export function createFlowerLeafShape(): THREE.Shape {
   // Return the reusable outline consumed by the rendered leaf component.
   return leaf;
 }
+
+// Turn the tested two-dimensional outline into a gently folded living leaf surface.
+export function createFlowerLeafGeometry(): THREE.BufferGeometry {
+  // ShapeGeometry preserves the established pointed silhouette and smooth edges.
+  const geometry = new THREE.ShapeGeometry(createFlowerLeafShape(), 12);
+  // Position vertices can be lifted before normals describe the final curved blade.
+  const positions = geometry.getAttribute("position") as THREE.BufferAttribute;
+
+  // Give the blade a central crown and softly lower both outer margins.
+  for (let vertex = 0; vertex < positions.count; vertex += 1) {
+    // Width progress reaches one at either edge of the tested leaf outline.
+    const widthProgress = Math.min(1, Math.abs(positions.getX(vertex)) / 0.18);
+    // Length progress keeps both pointed ends close to their stem-facing plane.
+    const lengthProgress = Math.min(1, Math.abs(positions.getY(vertex)) / 0.3);
+    // A raised midrib and lowered margins create a shallow botanical fold.
+    const fold =
+      (1 - lengthProgress) * 0.024 - Math.pow(widthProgress, 1.6) * 0.016;
+    // Local Z becomes visible leaf depth after each component rotation.
+    positions.setZ(vertex, fold);
+  }
+  // Upload the folded surface before recalculating its light-facing directions.
+  positions.needsUpdate = true;
+  // Curved normals let soft daylight travel across the leaf blade.
+  geometry.computeVertexNormals();
+  // Bounds keep the shared geometry safe for ordinary view-frustum culling.
+  geometry.computeBoundingBox();
+  geometry.computeBoundingSphere();
+  // Return one immutable surface reused by every flower leaf.
+  return geometry;
+}

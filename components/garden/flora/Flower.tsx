@@ -1,40 +1,54 @@
-// Layout effects populate GPU instance transforms after the petal mesh mounts.
-import { useLayoutEffect, useRef } from "react";
-// Three supplies constants that are not exposed as JSX components.
+// Fiber advances subtle wind response without rerendering React every frame.
+import { useFrame } from "@react-three/fiber";
+// React retains the root plant transform throughout animation and interaction.
+import { useRef } from "react";
+// Three supplies the group type and restrained numeric weather mapping.
 import * as THREE from "three";
 // The shared target hides flower registration, metadata, and cleanup.
 import { GardenInteractionTarget } from "../interaction/GardenInteractionTarget";
-// The memory object gives this visual flower an identity and inspectable content.
+// The open bell renderer owns its hollow corolla, curled rim, and inner stamens.
+import { BellBloom } from "./flower/BellBloom";
+// A cohesive atmosphere value prevents wind fields travelling as unrelated numbers.
+import {
+  getFlowerWindTravelRadians,
+  type FlowerAtmosphere,
+} from "./flower/flower-atmosphere";
+// Open archetypes share curved petals while preserving recognisable species form.
+import { FlowerBloom } from "./flower/FlowerBloom";
+// One instanced foliage component selects the whole plant's species silhouette.
+import { FlowerFoliage } from "./flower/FlowerFoliage";
+// This type keeps the flower's renderer and authored species data in agreement.
+import type { FlowerArchetype } from "./flower/flower-archetype";
+// The catalogue owns branches, foliage, and every bloom attachment together.
+import { FLOWER_PLANT_STRUCTURES } from "./flower/flower-plant-structure";
+// A curved tube replaces the old mechanically straight cylinder stem.
+import { FlowerStem, FlowerStemSegment } from "./flower/FlowerStem";
+// The memory object gives this visual flower identity and inspectable content.
 import type { FlowerMemory } from "./flower-memory";
-// A dedicated component gives each leaf a pointed silhouette and visible vein.
-import { FlowerLeaf } from "./FlowerLeaf";
-// The curved petal outline replaces inflated spheres with a botanical silhouette.
-import { createFlowerPetalShape } from "./flower-petal-shape";
 
-// Create one immutable outline shared by every ordinary flower petal instance.
-const FLOWER_PETAL_SHAPE = createFlowerPetalShape();
-
-// These values describe one procedural flower instance.
+// These values describe one complete procedural or species-authored flower.
 type FlowerProps = {
-  // A tuple stores the flower's x, y, and z coordinates.
+  // A tuple stores the rooted world x, y, and z coordinates.
   position: [number, number, number];
-  // This color is applied to every petal.
+  // Petal pigment comes from authored species data or a planted-memory palette.
   color: string;
-  // This data is exposed to the raycasting interaction module.
+  // This data is exposed through the interaction registry and inspection dialog.
   memory: FlowerMemory;
-  // The targeted flower receives a subtle glow.
+  // The targeted flower receives a subtle whole-bloom glow.
   highlighted?: boolean;
-  // Scale changes the size of the whole flower group.
+  // Scale controls complete plant stature while retaining botanical proportions.
   scale?: number;
-  // Petal count creates visual variation between flowers.
+  // Petal count follows species structure and varies unidentified memory flowers.
   petals?: number;
-  // Layers let fuller blooms add an offset inner ring without a new archetype.
+  // Layers allow a genuinely fuller flower to overlap curved petal rings.
   layers?: number;
-  // Bell flowers use cones and point downward.
-  bell?: boolean;
+  // Archetype selects the flower's distinct structural vocabulary.
+  archetype?: FlowerArchetype;
+  // Wind connects the plant to one coherent real UK atmosphere value.
+  atmosphere?: FlowerAtmosphere;
 };
 
-// Build a complete flower from simple Three.js primitives.
+// Build one complete botanically structured flower rooted in the living meadow.
 export function Flower({
   position,
   color,
@@ -43,116 +57,98 @@ export function Flower({
   scale = 1,
   petals = 8,
   layers = 1,
-  bell = false,
+  archetype = "meadow",
+  atmosphere = { windSpeedKph: 6, windDirectionDegrees: 240 },
 }: FlowerProps) {
-  // This ref exposes the one instanced mesh shared by every visible petal.
-  const petalMesh = useRef<THREE.InstancedMesh>(null);
-  // A layered bloom renders all rings through the same single draw call.
-  const visiblePetalCount = petals * layers;
+  // The root group pivots every stem and bloom together from the soil surface.
+  const flower = useRef<THREE.Group>(null);
+  // Bell flowers lean to one side to carry their one-sided woodland raceme.
+  const hanging = archetype === "bell";
+  // One species record now owns the complete plant rather than only its flower head.
+  const structure = FLOWER_PLANT_STRUCTURES[archetype];
+  // Stable spatial phase prevents every flower swaying in synchronized rows.
+  const windPhase = position[0] * 0.37 + position[2] * 0.19;
+  // Convert meteorological bearing into one horizontal garden direction.
+  const windRadians = getFlowerWindTravelRadians(
+    atmosphere.windDirectionDegrees,
+  );
+  // Map even strong forecasts to a gentle flexible-stem rotation.
+  const swayStrength = THREE.MathUtils.clamp(
+    0.004 + atmosphere.windSpeedKph / 820,
+    0.004,
+    0.034,
+  );
 
-  // Fill the shared petal mesh whenever this flower's petal count changes.
-  useLayoutEffect(() => {
-    // Stop until React has attached the instanced mesh to the ref.
-    if (!petalMesh.current) return;
-    // Reuse one temporary object to compose every petal transform.
-    const transform = new THREE.Object3D();
-    // Give each petal ring its own radius, offset, scale, and gentle depth.
-    for (let index = 0; index < visiblePetalCount; index += 1) {
-      // Integer division identifies which concentric ring owns this petal.
-      const layer = Math.floor(index / petals);
-      // The remainder identifies this petal's place within its ring.
-      const petalIndex = index % petals;
-      // Calculate this petal's evenly spaced angle around the complete circle.
-      const angle =
-        (petalIndex * Math.PI * 2) / petals + (layer * Math.PI) / petals;
-      // Outer petals travel farther while inner petals overlap the flower center.
-      const radius = layer === 0 ? 0.11 : 0.055;
-      // Sine and cosine place each petal around its own concentric ring.
-      transform.position.set(
-        Math.cos(angle) * radius,
-        Math.sin(angle) * radius,
-        layer * 0.018 + Math.sin(angle * 2) * 0.008,
-      );
-      // Rotate the petal so its long side points away from the center.
-      transform.rotation.set(0, 0, angle - Math.PI / 2);
-      // Inner petals are smaller and alternating petals vary imperceptibly.
-      const variation = 0.94 + (petalIndex % 3) * 0.035;
-      const layerScale = layer === 0 ? 1 : 0.7;
-      transform.scale.set(variation * layerScale, layerScale, 1);
-      // Convert this position, rotation, and scale into one instance matrix.
-      transform.updateMatrix();
-      // Store the completed matrix in the matching GPU instance slot.
-      petalMesh.current.setMatrixAt(index, transform.matrix);
-    }
-    // Tell Three.js to upload the new instance matrices to the GPU.
-    petalMesh.current.instanceMatrix.needsUpdate = true;
-    // Recalculate the flower head's bounds for correct view-frustum culling.
-    petalMesh.current.computeBoundingSphere();
-  }, [petals, visiblePetalCount]);
+  // Move slowly from the rooted base so blooms feel alive without bobbing mechanically.
+  useFrame(({ clock }) => {
+    // The first frame may arrive before React has attached the flower group ref.
+    if (!flower.current) return;
+    // Two frequencies produce changing gust shape instead of one pendulum rhythm.
+    const sway =
+      Math.sin(clock.elapsedTime * 0.72 + windPhase) * swayStrength +
+      Math.sin(clock.elapsedTime * 1.31 + windPhase * 1.7) *
+        swayStrength *
+        0.28;
+    // Wind direction divides the bend naturally across the garden's X and Z axes.
+    flower.current.rotation.z = sway * Math.cos(windRadians);
+    flower.current.rotation.x = sway * Math.sin(windRadians);
+  });
 
-  // Grouping the pieces lets position and scale affect the entire flower.
+  // Grouping every botanical part lets scale, position, and sway remain coherent.
   return (
-    <group position={position} scale={scale}>
-      {/* One target surrounds the stem, leaves, and complete flower head. */}
+    <group ref={flower} position={position} scale={scale}>
+      {/* One invisible volume surrounds stem, leaves, and complete flower head. */}
       <GardenInteractionTarget
         item={{ ...memory, kind: "flower" }}
-        position={[0, 0.9, 0]}
-        size={[0.9, 1.8, 0.9]}
+        position={[0, 0.62, 0]}
+        size={[0.72, 1.35, 0.72]}
       />
-      {/* A narrow cylinder forms the stem. */}
-      <mesh position={[0, 0.7, 0]}>
-        {/* The top and bottom radii differ slightly for an organic taper. */}
-        <cylinderGeometry args={[0.025, 0.045, 1.4, 8]} />
-        {/* A rough green material keeps the stem from looking plastic. */}
-        <meshStandardMaterial color="#34543a" roughness={0.9} />
-      </mesh>
-      {/* The lower leaf grows outward from the left side of the stem. */}
-      <FlowerLeaf
-        position={[-0.18, 0.67, 0]}
-        rotation={[0.12, -0.28, 0.85]}
-        scale={0.9}
-      />
-      {/* A smaller opposite leaf breaks symmetry and fills the upper stem. */}
-      <FlowerLeaf
-        position={[0.15, 0.91, 0.01]}
-        rotation={[-0.1, 0.24, -0.85]}
-        scale={0.72}
-      />
-      {/* This group holds the entire flower head above the stem. */}
-      <group
-        position={[0, 1.42, 0]}
-        rotation={bell ? [Math.PI, 0, 0] : [0, 0, 0]}
-      >
-        {/* One instanced mesh renders every petal with one geometry and material. */}
-        <instancedMesh
-          ref={petalMesh}
-          args={[undefined, undefined, visiblePetalCount]}
-        >
-          {/* Bell flowers retain cups; ordinary blooms use refined flat petals. */}
-          {bell ? (
-            <coneGeometry args={[0.14, 0.36, 12]} />
-          ) : (
-            <shapeGeometry args={[FLOWER_PETAL_SHAPE, 12]} />
-          )}
-          {/* Render both sides and preserve the complete flower-level highlight. */}
-          <meshStandardMaterial
-            color={color}
-            // Reuse the petal color as a gentle glow while targeted.
-            emissive={highlighted ? color : "#000000"}
-            // Zero removes the glow entirely from untargeted flowers.
-            emissiveIntensity={highlighted ? 0.55 : 0}
-            roughness={0.65}
-            side={THREE.DoubleSide}
+      {/* A continuous curved tube gives the plant one grown load-bearing stem. */}
+      <FlowerStem hanging={hanging} highlighted={highlighted} />
+      {/* Rose canes and bluebell pedicels visibly connect every secondary bloom. */}
+      {structure.branches.map((branch, index) => (
+        <FlowerStemSegment
+          key={`branch-${index}`}
+          from={branch.from}
+          to={branch.to}
+          radius={0.012}
+        />
+      ))}
+      {/* Each bluebell hangs from a fine side stalk instead of touching the spike. */}
+      {hanging &&
+        structure.blooms.map((bloom, index) => (
+          <FlowerStemSegment
+            key={`pedicel-${index}`}
+            from={[bloom.position[0] * 0.68, bloom.position[1] - 0.025, 0]}
+            to={bloom.position}
+            radius={0.007}
           />
-        </instancedMesh>
-        {/* Ordinary flowers receive a yellow center; bells remain hollow. */}
-        {!bell && (
-          <mesh position={[0, 0, 0.045]}>
-            <sphereGeometry args={[0.13, 20, 12]} />
-            <meshStandardMaterial color="#d8a83b" roughness={0.9} />
-          </mesh>
-        )}
-      </group>
+        ))}
+      {/* Species-specific instanced foliage changes the complete plant silhouette. */}
+      <FlowerFoliage kind={structure.foliage} />
+      {/* A rose branches into three flowers while a bluebell carries six nodding bells. */}
+      {structure.blooms.map((bloom, index) => (
+        <group
+          key={`bloom-${index}`}
+          position={[...bloom.position]}
+          rotation={[...bloom.rotation]}
+          scale={bloom.scale}
+        >
+          {hanging ? (
+            // A hollow open corolla replaces the old downward solid cone.
+            <BellBloom color={color} highlighted={highlighted} />
+          ) : (
+            // Open blooms combine curved petals, sepals, receptacle, and stamens.
+            <FlowerBloom
+              color={color}
+              profile={archetype}
+              petals={petals}
+              layers={layers}
+              highlighted={highlighted}
+            />
+          )}
+        </group>
+      ))}
     </group>
   );
 }

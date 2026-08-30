@@ -7,6 +7,10 @@ import { useGardenInteractionRegistry } from "./GardenInteractionRegistry";
 // Every hit volume carries one discriminated flower, tree, or animal identity.
 import type { GardenItem } from "./garden-item";
 
+// One unit box and invisible material serve every registered interaction target.
+const INTERACTION_TARGET_GEOMETRY = new THREE.BoxGeometry(1, 1, 1);
+const INTERACTION_TARGET_MATERIAL = new THREE.MeshBasicMaterial();
+
 // Three coordinates describe a local position or box size in X, Y, and Z order.
 type VectorTuple = readonly [number, number, number];
 
@@ -49,14 +53,12 @@ export function GardenInteractionTarget({
       <mesh
         ref={interactionTarget}
         position={[position[0], position[1], position[2]]}
+        scale={[size[0], size[1], size[2]]}
+        geometry={INTERACTION_TARGET_GEOMETRY}
+        material={INTERACTION_TARGET_MATERIAL}
         visible={false}
         userData={{ gardenItem: item }}
-      >
-        {/* Copy readonly configuration into the mutable tuple expected by Three.js. */}
-        <boxGeometry args={[size[0], size[1], size[2]]} />
-        {/* Mesh raycasting requires a material even though rendering skips it. */}
-        <meshBasicMaterial />
-      </mesh>
+      />
       {/* Only the currently targeted moving subject creates this gentle glow. */}
       {highlighted && (
         <pointLight
